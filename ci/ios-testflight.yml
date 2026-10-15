@@ -1,0 +1,104 @@
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      changelog:
+        description: "What to tell testers"
+        required: false
+        default: "Makan Hour demo build"
+  push:
+    tags: ["ios-v*"]
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: apps/makan-hour
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      TESTFLIGHT_CHANGELOG: ${{ github.event.inputs.changelog || github.ref_name }}
+      FASTLANE_SKIP_UPDATE_CHECK: "1"
+      FASTLANE_HIDE_CHANGELOG: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required secrets
+        working-directory: .
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          SB_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          SB_ANON: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          missing=0
+          for v in ASC_KEY_ID ASC_ISSUER_ID APPLE_TEAM_ID ASC_KEY_P8 SB_URL SB_ANON; do
+            if [ -z "${!v}" ]; then echo "::error::Missing secret for $v"; missing=1; fi
+          done
+          exit $missing
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app || xcodebuild -version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install JS dependencies
+        working-directory: .
+        run: npm ci
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          working-directory: apps/makan-hour
+
+      - name: Install fastlane and CocoaPods
+        run: bundle install --jobs 4 --retry 3
+
+      - name: Write app env (baked into the JS bundle)
+        env:
+          SB_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          SB_ANON: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          printf 'EXPO_PUBLIC_SUPABASE_URL=%s\nEXPO_PUBLIC_SUPABASE_ANON_KEY=%s\n' "$SB_URL" "$SB_ANON" > .env
+
+      - name: Expo prebuild (iOS)
+        run: npx expo prebuild --platform ios --clean --no-install
+
+      - name: Install pods
+        run: bundle exec pod install --project-directory=ios
+
+      - name: Decode signing material
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          DIST_CERT_P12: ${{ secrets.DIST_CERT_P12 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/keys"
+          echo "$ASC_KEY_P8" | base64 --decode > "$RUNNER_TEMP/keys/AuthKey.p8"
+          echo "ASC_KEY_PATH=$RUNNER_TEMP/keys/AuthKey.p8" >> "$GITHUB_ENV"
+          if [ -n "$DIST_CERT_P12" ]; then
+            echo "$DIST_CERT_P12" | base64 --decode > "$RUNNER_TEMP/keys/dist.p12"
+            echo "DIST_CERT_P12_PATH=$RUNNER_TEMP/keys/dist.p12" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build and upload to TestFlight
+        env:
+          DIST_CERT_PASSWORD: ${{ secrets.DIST_CERT_PASSWORD }}
+        run: bundle exec fastlane ios beta
+
+      - name: Clean up keys
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys" build/certs build/profiles .env

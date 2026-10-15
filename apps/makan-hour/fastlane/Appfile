@@ -1,0 +1,2 @@
+app_identifier("my.makanhour.app")
+team_id(ENV["APPLE_TEAM_ID"])

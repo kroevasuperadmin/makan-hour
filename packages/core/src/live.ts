@@ -56,7 +56,8 @@ export async function writeOrder(o: Order) {
 }
 export async function removeOrder(id: string) { const { error } = await need().from('makan_orders').delete().eq('id', id); if (error) throw error; }
 export async function writeDrop(d: Drop) {
-  const { error } = await need().from('makan_drops').upsert({ session_id: SESSION, office_id: d.officeId, caterer_id: d.catererId, stage: d.stage, due_at: d.dueAt, delay_min: d.delayMin, delay_notified_at: d.delayNotifiedAt, delivered_at: d.deliveredAt, rider: d.rider }); if (error) throw error;
+  // Rows are pre-seeded; anon may only update them (see supabase/makan_rls.sql).
+  const { error } = await need().from('makan_drops').update({ caterer_id: d.catererId, stage: d.stage, due_at: d.dueAt, delay_min: d.delayMin, delay_notified_at: d.delayNotifiedAt, delivered_at: d.deliveredAt, rider: d.rider }).eq('session_id', SESSION).eq('office_id', d.officeId); if (error) throw error;
 }
 export async function writeProfile(employeeId: string, floor: string, desk: string) {
   const { error } = await need().from('makan_profiles').upsert({ session_id: SESSION, employee_id: employeeId, floor, desk }); if (error) throw error;
@@ -66,7 +67,7 @@ export async function resetLive() {
   await db.from('makan_orders').delete().eq('session_id', SESSION);
   await db.from('makan_profiles').delete().eq('session_id', SESSION);
   const s = defaultSession();
-  await db.from('makan_session').upsert({ id: SESSION, cutoff_passed: false, batch_confirmed: false, clock_base: s.clockBase, clock_started_at: new Date().toISOString(), nudged: [], invoice_status: 'unpaid', invoice_paid_ref: null, invoice_paid_via: null });
+  await db.from('makan_session').update({ cutoff_passed: false, batch_confirmed: false, clock_base: s.clockBase, clock_started_at: new Date().toISOString(), nudged: [], invoice_status: 'unpaid', invoice_paid_ref: null, invoice_paid_via: null }).eq('id', SESSION);
   for (const d of seedDrops()) await writeDrop(d);
 }
 
