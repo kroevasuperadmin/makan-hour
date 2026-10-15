@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Drop, DropStage, Employee, Invoice, Order } from './types';
 import * as seed from './seed';
-import { defaultSession, fetchLive, LiveState, removeOrder, resetLive, subscribe, supabase, writeDrop, writeOrder, writeProfile, writeSession } from './live';
+import { defaultSession, fetchLive, hasTopUpCols, LiveState, removeOrder, resetLive, subscribe, supabase, writeDrop, writeOrder, writeProfile, writeSession } from './live';
 
 export interface State {
   caterers: typeof seed.caterers; dishes: typeof seed.dishes; offices: typeof seed.offices;
@@ -29,7 +29,8 @@ function derive(l: LiveState, now: number, connected: boolean, loc: Local): Stat
     orders: [...seedOrders, ...l.orders], drops: l.drops.length ? l.drops : seed.seedDrops(),
     invoice: { ...inv, status: l.session.invoiceStatus, paidRef: l.session.invoicePaidRef, paidVia: l.session.invoicePaidVia },
     clock: clockOf(l, now), cutoffPassed: l.session.cutoffPassed, batchConfirmed: l.session.batchConfirmed, nudged: l.session.nudged,
-    meId: 'me', connected, mode: supabase ? 'live' : 'local', ...loc,
+    meId: 'me', connected, mode: supabase ? 'live' : 'local',
+    topUpsAllowed: l.session.topUpsAllowed ?? loc.topUpsAllowed, topUpPaidRef: l.session.topUpPaidRef !== undefined ? l.session.topUpPaidRef : loc.topUpPaidRef,
   };
 }
 
@@ -105,11 +106,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const [loc, setLoc] = useState<Local>({ topUpsAllowed: true, topUpPaidRef: null });
   const dispatch = useCallback((a: Action) => {
-    // Top-up policy and the employee's top-up payment are kept on the device for now (no DB column yet).
-    if (a.t === 'topups') { setLoc(x => ({ ...x, topUpsAllowed: a.on })); return; }
-    if (a.t === 'topupPaid') { setLoc(x => ({ ...x, topUpPaidRef: a.ref })); return; }
+    // Top-up policy and the employee's top-up payment sync through makan_session when its columns
+    // exist (hasTopUpCols); otherwise they stay on this device.
+    const sess = (p: Partial<LiveState['session']>) => {
+      setLive(l => (l.session.topUpsAllowed === undefined && !hasTopUpCols ? l : { ...l, session: { ...l.session, ...p } }));
+      if (supabase && hasTopUpCols) { pending.current++; queue = queue.then(async () => { try { await writeSession(p); } catch { setConnected(false); } finally { pending.current--; refresh(); } }); }
+    };
+    if (a.t === 'topups') { setLoc(x => ({ ...x, topUpsAllowed: a.on })); sess({ topUpsAllowed: a.on }); return; }
+    if (a.t === 'topupPaid') { setLoc(x => ({ ...x, topUpPaidRef: a.ref })); sess({ topUpPaidRef: a.ref }); return; }
     if (a.t === 'reset') setLoc({ topUpsAllowed: true, topUpPaidRef: null });
-    if (a.t === 'order' || a.t === 'cancel') setLoc(x => ({ ...x, topUpPaidRef: null }));
+    if ((a.t === 'order' || a.t === 'cancel') && !liveRef.current.session.cutoffPassed) { setLoc(x => ({ ...x, topUpPaidRef: null })); if (hasTopUpCols) sess({ topUpPaidRef: null }); }
     const [next, writes] = apply(liveRef.current, a, Date.now());
     setLive(next);
     if (!supabase) return;

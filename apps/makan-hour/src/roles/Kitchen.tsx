@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { dish, hhmm, officeOrders, useStore } from '@makan/core';
+import { pushDelay } from '../notify';
 import { Badge, Button, Card, color, Divider, font, Gap, Icon, radius, Row, Screen, Segmented, space, T } from '@makan/ui';
 
 function Batch({ catererId, setCaterer }: { catererId: string; setCaterer: (c: string) => void }) {
@@ -125,7 +126,7 @@ function Drops() {
               <Gap h={space.l} />
               <Row style={{ gap: space.s }}>
                 <Button testID={`advance-${o.id}`} style={{ flex: 1 }} label={d.stage === 3 ? 'Mark delivered' : `Mark ${STAGES[d.stage + 1].toLowerCase()}`} kind={d.stage === 3 ? 'accent' : 'primary'} onPress={() => dispatch({ t: 'advance', officeId: o.id })} />
-                {d.stage === 3 && d.delayMin === 0 && <Button testID={`delay-${o.id}`} kind="secondary" icon="alert" label="Traffic +12" onPress={() => dispatch({ t: 'delay', officeId: o.id, minutes: 12 })} />}
+                {d.stage === 3 && d.delayMin === 0 && <Button testID={`delay-${o.id}`} kind="secondary" icon="alert" label="Traffic +12" onPress={() => { dispatch({ t: 'delay', officeId: o.id, minutes: 12 }); pushDelay(o.id); }} />}
               </Row>
             </>}
             {d.stage === 0 && <T v="small" style={{ marginTop: space.m }}>Starts when the caterer confirms the batch.</T>}

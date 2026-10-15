@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { useWindowDimensions } from 'react-native';
 import { ALLOWANCE_SEN, CUTOFF, dish, hhmm, me, officeOrders, rm, topUpSen, useStore } from '@makan/core';
 import FpxPay from '../FpxPay';
-import { useAlertOnChange } from '../notify';
+import { useAlertOnChange, useRegisterPush } from '../notify';
 import { Badge, Bar, Button, Card, color, Divider, font, Gap, Icon, radius, Row, Screen, Segmented, space, T } from '@makan/ui';
 
 function Today() {
@@ -18,6 +18,7 @@ function Today() {
   const notNudged = missing.filter(e => !s.nudged.includes(e.id));
   const drop = s.drops.find(d => d.officeId === office.id)!;
   const left = Math.max(0, CUTOFF - s.clock);
+  useRegisterPush('admin');
   useAlertOnChange(drop.delayNotifiedAt ? `${drop.delayNotifiedAt}-${drop.delayMin}` : null, `Lunch drop ${drop.delayMin} min late`, `${office.dropSpot}: new time ${hhmm(drop.dueAt + drop.delayMin * 60)}. Staff have been told.`, drop.stage < 4);
   return (
     <>

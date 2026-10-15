@@ -34,7 +34,13 @@
     },
     "plugins": [
       "expo-font",
-      "./plugins/withReleaseSigning"
+      "./plugins/withReleaseSigning",
+      [
+        "expo-notifications",
+        {
+          "mode": "production"
+        }
+      ]
     ],
     "scheme": "makan-hour",
     "backgroundColor": "#F5F3EE"

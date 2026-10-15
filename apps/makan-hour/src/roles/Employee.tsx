@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { ALLOWANCE_SEN, CUTOFF, dish, hhmm, me, myOrder, rm, topUpSen, useStore } from '@makan/core';
 import FpxPay from '../FpxPay';
-import { askPermission, useAlertOnChange } from '../notify';
+import { askPermission, useAlertOnChange, useRegisterPush } from '../notify';
 import { Badge, Button, Card, color, Divider, font, Gap, Icon, radius, Row, Screen, space, T } from '@makan/ui';
 
 function Countdown() {
@@ -118,6 +118,7 @@ export default function Employee() {
   const [sel, setSel] = useState<string | null>(null);
   const order = myOrder(s); const u = me(s);
   const myDrop = s.drops.find(x => x.officeId === u.officeId)!;
+  useRegisterPush('employee');
   useAlertOnChange(myDrop.delayNotifiedAt ? `${myDrop.delayNotifiedAt}-${myDrop.delayMin}` : null,
     `Lunch is ${myDrop.delayMin} min late`, `New time ${hhmm(myDrop.dueAt + myDrop.delayMin * 60)} at ${s.offices.find(x => x.id === u.officeId)!.dropSpot}.`, !!order && myDrop.stage < 4);
   const today = s.dishes;
