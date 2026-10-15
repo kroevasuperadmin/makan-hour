@@ -95,3 +95,18 @@ Backup plan: if the venue Wi-Fi fails, use a pre-recorded screen video or `docs/
 - FPX B2B is a mock, not a Billplz or CHIP sandbox.
 - The invoice totals and month-to-date spend are seeded figures.
 - The demo clock is simulated and jumps forward at each step.
+
+## Android
+
+- **Package:** `com.wildrice.makanhour`. Play Console fixed this name; the iOS bundle ID stays `my.makanhour.app`.
+- **Version:** versionName 1.0.0, versionCode 1.
+- **Signing:** `plugins/withReleaseSigning.js` adds release signing to the generated Gradle project. The keystore details come from the env vars `MAKAN_UPLOAD_STORE_FILE`, `MAKAN_UPLOAD_STORE_PASSWORD`, `MAKAN_UPLOAD_KEY_ALIAS` and `MAKAN_UPLOAD_KEY_PASSWORD`. They are never stored in the repo.
+- **Upload keystore:** on the box at `/home/box/secrets/makanhour-upload.keystore` (alias `makanhour-upload`), with its password in `android_upload.pass`. Both are mode 600. Also stored as the GitHub secrets `ANDROID_KEYSTORE_*` / `ANDROID_KEY_*`. Keep a second backup somewhere safe: if this keystore is lost, Play needs an upload-key reset.
+- **Local build:**
+  ```bash
+  cd apps/makan-hour
+  npx expo prebuild -p android --clean --no-install
+  cd android
+  ./gradlew bundleRelease assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
+  ```
+- **CI:** `ci/android-play.yml`. Move it to `.github/workflows/` to turn it on. It builds the `.aab` with versionCode = 100 + run number and uploads it to Play internal testing as a draft. It needs the `PLAY_SERVICE_ACCOUNT_JSON` secret, and the first `.aab` must be uploaded by hand in Play Console.
