@@ -11,6 +11,7 @@ export const dishes: Dish[] = [
   { id: 'd2', catererId: 'c1', name: 'Nasi Lemak Ayam Berempah', description: 'Spiced fried chicken, sambal, ikan bilis, egg, cucumber', priceSen: 1450, tags: ['Spicy'] },
   { id: 'd3', catererId: 'c2', name: 'Mee Goreng Mamak', description: 'Wok-fried yellow noodles, tofu, prawn fritter, lime', priceSen: 1150, tags: ['Medium'] },
   { id: 'd4', catererId: 'c2', name: 'Vegetable Briyani Set', description: 'Basmati briyani, dhal, three vegetables, raita', priceSen: 1250, tags: ['Vegetarian'] },
+  { id: 'd5', catererId: 'c1', name: 'Nasi Kandar Ayam Madu', description: 'Honey-glazed chicken, mixed curry, cabbage, papadom', priceSen: 1790, tags: ['Medium'] },
 ];
 
 export const offices: Office[] = [
@@ -60,6 +61,8 @@ export function seedOrders(): Order[] {
 export const DEMO_START = 9 * 3600 + 18 * 60; // 09:18
 export const CUTOFF = 10 * 3600 + 30 * 60; // 10:30
 export const DUE = 12 * 3600 + 15 * 60; // 12:15
+// What the company pays per person per day. Anything above it is a staff top-up.
+export const ALLOWANCE_SEN = 1500;
 export const DROP_FEE_SEN = 900; // per drop, per office (Pack B: RM8-9.20)
 
 export function seedDrops(): Drop[] {

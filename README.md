@@ -53,7 +53,7 @@ npm run e2e                                   # screenshots go to docs/screens/{
 APP_URL=https://makan-hour-app.vercel.app NO_SHOTS=1 npm run e2e   # against production
 ```
 
-Deploy: copy `apps/makan-hour/dist` to a folder outside the repo, then run `vercel deploy --prod --name makan-hour-app` from there. Deploying from inside the monorepo uploads the source instead of the build.
+Deploy: copy `apps/makan-hour/dist` and `apps/makan-hour/api` (FPX routes, see docs/FPX.md) to a folder outside the repo, then run `vercel deploy --prod --name makan-hour-app` from there. Deploying from inside the monorepo uploads the source instead of the build.
 
 ## Reset before the demo
 

@@ -8,17 +8,20 @@ export interface State {
   employees: Employee[]; orders: Order[]; drops: Drop[]; invoice: Invoice;
   clock: number; cutoffPassed: boolean; batchConfirmed: boolean; nudged: string[]; meId: string;
   connected: boolean; mode: 'live' | 'local';
+  topUpsAllowed: boolean; topUpPaidRef: string | null;
 }
 export type Action =
   | { t: 'order'; dishId: string } | { t: 'cancel' } | { t: 'spot'; floor: string; desk: string } | { t: 'cutoff' } | { t: 'confirmBatch' }
   | { t: 'advance'; officeId: string } | { t: 'delay'; officeId: string; minutes: number } | { t: 'nudge'; ids: string[] }
-  | { t: 'pay'; via: string; ref: string } | { t: 'reset' };
+  | { t: 'pay'; via: string; ref: string } | { t: 'reset' }
+  | { t: 'topups'; on: boolean } | { t: 'topupPaid'; ref: string };
 
 const seedOrders = seed.seedOrders();
 const blankLive = (): LiveState => ({ session: defaultSession(), orders: [], drops: seed.seedDrops(), profiles: {} });
 const clockOf = (l: LiveState, now: number) => l.session.clockBase + Math.floor((now - l.session.clockStartedAt) / 1000);
 
-function derive(l: LiveState, now: number, connected: boolean): State {
+type Local = { topUpsAllowed: boolean; topUpPaidRef: string | null };
+function derive(l: LiveState, now: number, connected: boolean, loc: Local): State {
   const inv = seed.seedInvoice();
   return {
     caterers: seed.caterers, dishes: seed.dishes, offices: seed.offices,
@@ -26,7 +29,7 @@ function derive(l: LiveState, now: number, connected: boolean): State {
     orders: [...seedOrders, ...l.orders], drops: l.drops.length ? l.drops : seed.seedDrops(),
     invoice: { ...inv, status: l.session.invoiceStatus, paidRef: l.session.invoicePaidRef, paidVia: l.session.invoicePaidVia },
     clock: clockOf(l, now), cutoffPassed: l.session.cutoffPassed, batchConfirmed: l.session.batchConfirmed, nudged: l.session.nudged,
-    meId: 'me', connected, mode: supabase ? 'live' : 'local',
+    meId: 'me', connected, mode: supabase ? 'live' : 'local', ...loc,
   };
 }
 
@@ -69,6 +72,7 @@ function apply(l: LiveState, a: Action, now: number): [LiveState, (() => Promise
     case 'nudge': { const p = { nudged: Array.from(new Set([...l.session.nudged, ...a.ids])) }; return [{ ...l, session: S(p) }, [() => writeSession(p)]]; }
     case 'pay': { const p = { invoiceStatus: 'paid' as const, invoicePaidRef: a.ref, invoicePaidVia: a.via }; return [{ ...l, session: S(p) }, [() => writeSession(p)]]; }
     case 'reset': return [blankLive(), [() => resetLive()]];
+    default: return [l, []];
   }
 }
 
@@ -99,7 +103,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => { unsub(); clearInterval(poll); clearInterval(tick); };
   }, [refresh]);
 
+  const [loc, setLoc] = useState<Local>({ topUpsAllowed: true, topUpPaidRef: null });
   const dispatch = useCallback((a: Action) => {
+    // Top-up policy and the employee's top-up payment are kept on the device for now (no DB column yet).
+    if (a.t === 'topups') { setLoc(x => ({ ...x, topUpsAllowed: a.on })); return; }
+    if (a.t === 'topupPaid') { setLoc(x => ({ ...x, topUpPaidRef: a.ref })); return; }
+    if (a.t === 'reset') setLoc({ topUpsAllowed: true, topUpPaidRef: null });
+    if (a.t === 'order' || a.t === 'cancel') setLoc(x => ({ ...x, topUpPaidRef: null }));
     const [next, writes] = apply(liveRef.current, a, Date.now());
     setLive(next);
     if (!supabase) return;
@@ -108,7 +118,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     queue = queue.then(async () => { try { for (const w of writes) await w(); } catch { setConnected(false); } finally { pending.current--; refresh(); } });
   }, [refresh]);
 
-  const s = useMemo(() => derive(live, now, connected), [live, now, connected]);
+  const s = useMemo(() => derive(live, now, connected, loc), [live, now, connected, loc]);
   const v = useMemo(() => ({ s, dispatch }), [s, dispatch]);
   return <Ctx.Provider value={v}>{children}</Ctx.Provider>;
 }
@@ -120,3 +130,6 @@ export function me(s: State) { return s.employees.find(e => e.id === s.meId)!; }
 export function myOrder(s: State) { return s.orders.find(o => o.employeeId === s.meId) ?? null; }
 export function dish(s: State, id: string) { return s.dishes.find(d => d.id === id)!; }
 export function officeOrders(s: State, officeId: string) { return s.orders.filter(o => o.officeId === officeId); }
+
+// Amount the employee pays above the company allowance for a dish (0 if within it).
+export const topUpSen = (priceSen: number) => Math.max(0, priceSen - seed.ALLOWANCE_SEN);

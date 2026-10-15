@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useWindowDimensions } from 'react-native';
-import { CUTOFF, dish, hhmm, me, officeOrders, rm, useStore } from '@makan/core';
+import { ALLOWANCE_SEN, CUTOFF, dish, hhmm, me, officeOrders, rm, topUpSen, useStore } from '@makan/core';
+import FpxPay from '../FpxPay';
+import { useAlertOnChange } from '../notify';
 import { Badge, Bar, Button, Card, color, Divider, font, Gap, Icon, radius, Row, Screen, Segmented, space, T } from '@makan/ui';
 
 function Today() {
   const { s, dispatch } = useStore();
   const office = s.offices.find(o => o.id === me(s).officeId)!;
   const orders = officeOrders(s, office.id);
-  const spend = orders.reduce((a, o) => a + dish(s, o.dishId).priceSen, 0);
+  // The company only pays up to the allowance; anything above is the employee's top-up.
+  const spend = orders.reduce((a, o) => a + Math.min(ALLOWANCE_SEN, dish(s, o.dishId).priceSen), 0);
+  const topUps = orders.filter(o => topUpSen(dish(s, o.dishId).priceSen) > 0);
   const staff = s.employees.filter(e => e.officeId === office.id);
   const missing = staff.filter(e => !orders.some(o => o.employeeId === e.id));
   const notNudged = missing.filter(e => !s.nudged.includes(e.id));
   const drop = s.drops.find(d => d.officeId === office.id)!;
   const left = Math.max(0, CUTOFF - s.clock);
+  useAlertOnChange(drop.delayNotifiedAt ? `${drop.delayNotifiedAt}-${drop.delayMin}` : null, `Lunch drop ${drop.delayMin} min late`, `${office.dropSpot}: new time ${hhmm(drop.dueAt + drop.delayMin * 60)}. Staff have been told.`, drop.stage < 4);
   return (
     <>
       <T v="label">{office.company}</T>
@@ -34,6 +39,19 @@ function Today() {
           <T v="small" style={{ marginTop: space.xs }}>of {rm(office.dailyBudgetSen)} budget</T>
         </Card>
       </View>
+      <Gap h={space.m} />
+      <Card>
+        <Row style={{ gap: space.m }}>
+          <View style={{ flex: 1 }}>
+            <T v="h2">Allowance {rm(ALLOWANCE_SEN)} per person</T>
+            <T v="small">{s.topUpsAllowed ? `Top-ups on. Staff pay the difference themselves by FPX. ${topUps.length} today.` : 'Top-ups off. Staff only see dishes within the allowance.'}</T>
+          </View>
+          <Pressable testID="toggle-topups" accessibilityRole="switch" accessibilityState={{ checked: s.topUpsAllowed }} onPress={() => dispatch({ t: 'topups', on: !s.topUpsAllowed })}
+            style={{ width: 48, height: 28, borderRadius: 14, padding: 3, backgroundColor: s.topUpsAllowed ? color.accent : color.sunk, alignItems: s.topUpsAllowed ? 'flex-end' : 'flex-start' }}>
+            <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: color.surface }} />
+          </Pressable>
+        </Row>
+      </Card>
       <Gap h={space.m} />
       <Card tone={s.cutoffPassed ? 'sunk' : 'warn'}>
         <Row style={{ gap: space.s }}>
@@ -150,7 +168,10 @@ function Invoice() {
         <T v="small" style={{ marginTop: space.xs }}>Issued {inv.issuedOn}. Per-employee average {rm(Math.round(total / 612))} per meal, delivery included.</T>
       </Card>
       <Gap h={space.xl} />
-      {inv.status === 'unpaid' && <Button testID="pay-invoice" label="Pay with FPX B2B (sandbox)" icon="building" onPress={() => setStep('bank')} />}
+      {inv.status === 'unpaid' && <FpxPay testID="pay-invoice" kind="invoice" payRef={inv.id} amountSen={total} name={office.company} email="finance@example.com"
+        description={`Makan Hour invoice ${inv.id} (${inv.period})`} label={`Pay ${rm(total)} by FPX`}
+        onPaid={id => dispatch({ t: 'pay', via: 'FPX via Billplz', ref: id })} onUnavailable={() => setStep('bank')} />}
+      <T v="small" style={{ marginTop: space.s }}>Staff top-ups above the allowance are paid by staff and never appear on this invoice.</T>
     </>
   );
 }

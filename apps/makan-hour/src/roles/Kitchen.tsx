@@ -136,7 +136,17 @@ function Drops() {
   );
 }
 
+function Terms() {
+  return (
+    <Card style={{ marginTop: space.xl }}>
+      <T v="label">Your terms with Makan Hour</T><Gap h={space.s} />
+      <T v="h2">No listing fee</T>
+      <T v="small">Being on the menu costs nothing: no sign-up fee, no monthly fee, no charge per dish listed. Makan Hour earns a commission only on meals you sell, at the rate in your partner agreement.</T>
+    </Card>
+  );
+}
+
 export type KitchenTab = 'batch' | 'labels' | 'drops';
 export default function Kitchen({ tab, cat, setCat }: { tab: KitchenTab; cat: string; setCat: (c: string) => void }) {
-  return <Screen>{tab === 'batch' ? <Batch catererId={cat} setCaterer={setCat} /> : tab === 'labels' ? <Labels catererId={cat} /> : <Drops />}</Screen>;
+  return <Screen>{tab === 'batch' ? <><Batch catererId={cat} setCaterer={setCat} /><Terms /></> : tab === 'labels' ? <Labels catererId={cat} /> : <Drops />}</Screen>;
 }

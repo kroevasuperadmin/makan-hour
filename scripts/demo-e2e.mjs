@@ -65,7 +65,7 @@ await E.t('delivered-panel').waitFor({ timeout: live }); await E.shot('06-delive
 const nar = await A.p.evaluate(() => innerWidth);
 if (nar < 820) await A.t('admin-tab-invoice').click();
 await A.shot('05-invoice');
-await A.t('pay-invoice').click(); await A.t('sandbox-banner').waitFor(); await A.t('bank-0').click(); await A.shot('06-fpx-sandbox-bank');
+await A.t('pay-invoice').click(); await A.t('fpx-mock').click(); await A.t('sandbox-banner').waitFor(); await A.t('bank-0').click(); await A.shot('06-fpx-sandbox-bank');
 await A.t('to-approve').click(); await A.shot('07-fpx-sandbox-approve');
 await A.t('approve-pay').click(); await A.t('paid-panel').waitFor(); await A.shot('08-invoice-paid');
 if (SHOTS) { await A.p.setViewportSize({ width: 1180, height: 820 }); await A.p.waitForTimeout(600); await A.p.screenshot({ path: `${OUT}admin/09-tablet-landscape.png` }); console.log('shot admin 09-tablet-landscape'); }
@@ -78,7 +78,8 @@ const box2 = await A.t('brand').boundingBox();
 await A.p.mouse.move(box2.x + 20, box2.y + 10); await A.p.mouse.down(); await A.p.waitForTimeout(1900); await A.p.mouse.up();
 await A.t('confirm-reset').click(); await A.p.waitForTimeout(2500);
 await A.t('sign-out').click(); await A.t('send-code').waitFor();
-const real = errs.filter(e => !/WebSocket|realtime/i.test(e));
+// 503 = the FPX route answering "no Billplz keys yet"; the app handles it and offers the mock flow.
+const real = errs.filter(e => !/WebSocket|realtime|status of 503/i.test(e));
 console.log('ERRORS:', JSON.stringify(real));
 await b.close();
 process.exit(real.length ? 1 : 0);

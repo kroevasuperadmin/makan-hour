@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
-import { CUTOFF, dish, hhmm, me, myOrder, rm, useStore } from '@makan/core';
+import { ALLOWANCE_SEN, CUTOFF, dish, hhmm, me, myOrder, rm, topUpSen, useStore } from '@makan/core';
+import FpxPay from '../FpxPay';
+import { askPermission, useAlertOnChange } from '../notify';
 import { Badge, Button, Card, color, Divider, font, Gap, Icon, radius, Row, Screen, space, T } from '@makan/ui';
 
 function Countdown() {
@@ -75,7 +77,13 @@ function ConfirmedPanel() {
       <Gap h={space.m} />
       <T v="body" style={{ color: color.onAccent, fontFamily: font.bodyStrong }}>{d.name}</T>
       <T v="body" style={{ color: color.onAccent, opacity: 0.85 }}>To {u.floor}, {u.desk} · arrives {hhmm(eta)}{drop.delayMin ? ' (revised)' : ''}</T>
-      <T v="small" style={{ color: color.onAccentMuted, marginTop: space.xs }}>Order MH-{String(o.placedAt).slice(-4)} · paid by {s.offices.find(x => x.id === u.officeId)!.company}</T>
+      <T v="small" style={{ color: color.onAccentMuted, marginTop: space.xs }}>Order MH-{String(o.placedAt).slice(-4)} · {topUpSen(d.priceSen) ? `${s.offices.find(x => x.id === u.officeId)!.company} pays ${rm(ALLOWANCE_SEN)}, you pay ${rm(topUpSen(d.priceSen))}` : `paid by ${s.offices.find(x => x.id === u.officeId)!.company}`}</T>
+      {topUpSen(d.priceSen) > 0 && <>
+        <Gap h={space.m} />
+        {s.topUpPaidRef ? <T v="small" testID="topup-paid" style={{ color: color.onAccent, fontFamily: font.bodyStrong }}>Top-up {rm(topUpSen(d.priceSen))} paid by FPX · ref {s.topUpPaidRef}</T>
+          : <FpxPay testID="pay-topup" kind="topup" kindOfButton="secondary" payRef={`ord-me-${o.placedAt}`} amountSen={topUpSen(d.priceSen)} name={u.name} email="aina.rahman@example.com"
+              description={`Top-up for ${d.name}`} label={`Pay ${rm(topUpSen(d.priceSen))} top-up by FPX`} onPaid={id => dispatch({ t: 'topupPaid', ref: id })} />}
+      </>}
       {!s.cutoffPassed && <>
         <Gap h={space.l} />
         <Row style={{ gap: space.s }}>
@@ -109,6 +117,9 @@ export default function Employee() {
   const { s, dispatch } = useStore();
   const [sel, setSel] = useState<string | null>(null);
   const order = myOrder(s); const u = me(s);
+  const myDrop = s.drops.find(x => x.officeId === u.officeId)!;
+  useAlertOnChange(myDrop.delayNotifiedAt ? `${myDrop.delayNotifiedAt}-${myDrop.delayMin}` : null,
+    `Lunch is ${myDrop.delayMin} min late`, `New time ${hhmm(myDrop.dueAt + myDrop.delayMin * 60)} at ${s.offices.find(x => x.id === u.officeId)!.dropSpot}.`, !!order && myDrop.stage < 4);
   const today = s.dishes;
   return (
     <Screen>
@@ -126,10 +137,17 @@ export default function Employee() {
       <SpotCard />
       {!order && !s.cutoffPassed && <>
         <Gap h={space.xxl} />
-        <Row style={{ justifyContent: 'space-between' }}><T v="label">Today's menu</T><T v="small">Company pays up to RM 15.00</T></Row>
+        <Row style={{ justifyContent: 'space-between' }}><T v="label">Today's menu</T><T v="small">Company pays up to {rm(ALLOWANCE_SEN)}</T></Row>
         <Gap h={space.m} />
         {today.map(d => {
           const c = s.caterers.find(x => x.id === d.catererId)!; const on = sel === d.id;
+          const extra = topUpSen(d.priceSen); const blocked = extra > 0 && !s.topUpsAllowed;
+          if (blocked) return (
+            <View key={d.id} testID={`dish-${d.id}-blocked`} style={{ borderWidth: 1, borderColor: color.line, borderRadius: radius.m, padding: space.l, marginBottom: space.m, opacity: 0.55 }}>
+              <Row style={{ justifyContent: 'space-between' }}><T v="h2">{d.name}</T><T v="num">{rm(d.priceSen)}</T></Row>
+              <T v="small" style={{ marginTop: 2 }}>Over your {rm(ALLOWANCE_SEN)} allowance. Your office has top-ups switched off.</T>
+            </View>
+          );
           return (
             <Pressable key={d.id} testID={`dish-${d.id}`} onPress={() => setSel(d.id)} accessibilityRole="radio" accessibilityState={{ checked: on }}
               style={{ borderWidth: on ? 2 : 1, borderColor: on ? color.ink : color.line, borderRadius: radius.m, padding: on ? space.l - 1 : space.l, backgroundColor: color.surface, marginBottom: space.m }}>
@@ -141,6 +159,7 @@ export default function Employee() {
                     <T v="small" style={{ color: color.ink2 }}>{c.name}</T>
                     {c.halalCertOnFile ? <Badge label="Halal cert on file" tone="accent" /> : null}
                     {d.tags.map(t => <Badge key={t} label={t} />)}
+                    {extra > 0 && <Badge label={`You add ${rm(extra)}`} tone="warn" />}
                   </Row>
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: space.s }}>
@@ -152,7 +171,7 @@ export default function Employee() {
           );
         })}
         <Gap h={space.s} />
-        <Button testID="place-order" label={sel ? `Order ${dish(s, sel).name}` : 'Choose a dish'} disabled={!sel} onPress={() => sel && dispatch({ t: 'order', dishId: sel })} />
+        <Button testID="place-order" label={sel ? (topUpSen(dish(s, sel).priceSen) ? `Order · you top up ${rm(topUpSen(dish(s, sel).priceSen))}` : `Order ${dish(s, sel).name}`) : 'Choose a dish'} disabled={!sel} onPress={() => { if (sel) { dispatch({ t: 'order', dishId: sel }); askPermission(); } }} />
         <Gap h={space.s} />
         <T v="small" style={{ textAlign: 'center' }}>Your order goes in with one tap and no checkout. You can change it until 10:30 am.</T>
       </>}
