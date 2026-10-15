@@ -1,10 +1,12 @@
 # TestFlight lane for Makan Hour. Runs on GitHub Actions macOS, no EAS and no match repo.
-# Signing: App Store Connect API key -> get_certificates + get_provisioning_profile.
+# Signing: App Store Connect API key + imported distribution cert -> get_provisioning_profile.
 default_platform(:ios)
 
 APP_ID   = "my.makanhour.app"
 WORKSPACE = "ios/MakanHour.xcworkspace"
 SCHEME   = "MakanHour"
+ASC_APP_ID   = ENV["ASC_APP_ID"].to_s.empty? ? "6823228464" : ENV["ASC_APP_ID"] # App Store Connect app (numeric Apple ID)
+DIST_CERT_ID = ENV["DIST_CERT_ID"].to_s.empty? ? "9A4L95TSR4" : ENV["DIST_CERT_ID"] # Apple Distribution cert used by CI
 
 platform :ios do
   desc "Build and upload to TestFlight"
@@ -20,19 +22,19 @@ platform :ios do
     )
     team_id = ENV.fetch("APPLE_TEAM_ID")
 
-    # Reuse an existing distribution certificate when one is provided as a secret
-    # (avoids creating a new cert every run; Apple caps distribution certs per team).
-    if ENV["DIST_CERT_P12_PATH"].to_s != ""
-      import_certificate(
-        certificate_path: ENV["DIST_CERT_P12_PATH"],
-        certificate_password: ENV.fetch("DIST_CERT_PASSWORD", ""),
-        keychain_name: ENV["MATCH_KEYCHAIN_NAME"] || "fastlane_tmp_keychain",
-        keychain_password: ""
-      )
-    end
-    get_certificates(api_key: api_key, team_id: team_id, development: false, generate_apple_certs: true, output_path: "build/certs")
+    # Distribution certificate: created ONCE outside CI (cert id in DIST_CERT_ID) and stored as the
+    # DIST_CERT_P12 / DIST_CERT_PASSWORD secrets. CI only imports it and never creates certificates,
+    # so repeated runs cannot hit Apple's per-team certificate cap.
+    UI.user_error!("DIST_CERT_P12 secret missing; see TESTFLIGHT.md (certificate section)") if ENV["DIST_CERT_P12_PATH"].to_s.empty?
+    import_certificate(
+      certificate_path: ENV["DIST_CERT_P12_PATH"],
+      certificate_password: ENV.fetch("DIST_CERT_PASSWORD"),
+      keychain_name: "fastlane_tmp_keychain",
+      keychain_password: ""
+    )
+    # Profile is fetched or (re)created against that exact certificate. Profiles have no practical cap.
     get_provisioning_profile(api_key: api_key, team_id: team_id, app_identifier: APP_ID, adhoc: false, development: false,
-                             force: false, output_path: "build/profiles", filename: "makanhour_appstore.mobileprovision")
+                             cert_id: DIST_CERT_ID, output_path: "build/profiles", filename: "makanhour_appstore.mobileprovision")
     profile_name = lane_context[SharedValues::SIGH_NAME]
 
     update_code_signing_settings(
@@ -50,7 +52,7 @@ platform :ios do
       xcargs: "DEVELOPMENT_TEAM=#{team_id}"
     )
 
-    upload_to_testflight(api_key: api_key, ipa: "build/MakanHour.ipa", skip_waiting_for_build_processing: true,
+    upload_to_testflight(api_key: api_key, apple_id: ASC_APP_ID, ipa: "build/MakanHour.ipa", skip_waiting_for_build_processing: true,
                          changelog: ENV["TESTFLIGHT_CHANGELOG"] || "Makan Hour demo build")
   end
 end

@@ -28,6 +28,8 @@ jobs:
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_APP_ID: ${{ secrets.ASC_APP_ID }}
+      DIST_CERT_ID: 9A4L95TSR4
       TESTFLIGHT_CHANGELOG: ${{ github.event.inputs.changelog || github.ref_name }}
       FASTLANE_SKIP_UPDATE_CHECK: "1"
       FASTLANE_HIDE_CHANGELOG: "1"
@@ -40,9 +42,11 @@ jobs:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           SB_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           SB_ANON: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          DIST_CERT_P12: ${{ secrets.DIST_CERT_P12 }}
+          DIST_CERT_PASSWORD: ${{ secrets.DIST_CERT_PASSWORD }}
         run: |
           missing=0
-          for v in ASC_KEY_ID ASC_ISSUER_ID APPLE_TEAM_ID ASC_KEY_P8 SB_URL SB_ANON; do
+          for v in ASC_KEY_ID ASC_ISSUER_ID APPLE_TEAM_ID ASC_KEY_P8 SB_URL SB_ANON DIST_CERT_P12 DIST_CERT_PASSWORD; do
             if [ -z "${!v}" ]; then echo "::error::Missing secret for $v"; missing=1; fi
           done
           exit $missing
@@ -89,10 +93,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/keys"
           echo "$ASC_KEY_P8" | base64 --decode > "$RUNNER_TEMP/keys/AuthKey.p8"
           echo "ASC_KEY_PATH=$RUNNER_TEMP/keys/AuthKey.p8" >> "$GITHUB_ENV"
-          if [ -n "$DIST_CERT_P12" ]; then
-            echo "$DIST_CERT_P12" | base64 --decode > "$RUNNER_TEMP/keys/dist.p12"
-            echo "DIST_CERT_P12_PATH=$RUNNER_TEMP/keys/dist.p12" >> "$GITHUB_ENV"
-          fi
+          echo "$DIST_CERT_P12" | base64 --decode > "$RUNNER_TEMP/keys/dist.p12"
+          echo "DIST_CERT_P12_PATH=$RUNNER_TEMP/keys/dist.p12" >> "$GITHUB_ENV"
 
       - name: Build and upload to TestFlight
         env:

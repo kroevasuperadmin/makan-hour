@@ -16,21 +16,27 @@ The pipeline is `.github/workflows/ios-testflight.yml`.
    - builds and exports the `.ipa` (`build_app`)
    - uploads it to TestFlight (`upload_to_testflight`)
 
-## GitHub Actions secrets
+## GitHub Actions secrets (all set 15 Oct 2026)
 
-| Secret | Status | What it is |
-|---|---|---|
-| `EXPO_PUBLIC_SUPABASE_URL` | **set** | Supabase project URL |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | **set** | Supabase anon key, limited by row-level security to the `makan_*` demo tables |
-| `ASC_KEY_ID` | needed from Faris | App Store Connect API key ID |
-| `ASC_ISSUER_ID` | needed from Faris | Issuer ID, shown on the same App Store Connect page |
-| `ASC_KEY_P8` | needed from Faris | The `.p8` key file, base64-encoded: `base64 -i AuthKey_XXXX.p8 \| pbcopy` |
-| `APPLE_TEAM_ID` | needed from Faris | 10-character Team ID from developer.apple.com → Membership |
-| `DIST_CERT_P12` / `DIST_CERT_PASSWORD` | optional | An existing Apple Distribution certificate, as a base64 `.p12` file plus its password. See the note on certificates. |
+| Secret | What it is |
+|---|---|
+| `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Supabase URL and anon key. Row-level security limits the key to the `makan_*` demo tables. |
+| `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8` | App Store Connect API key. `ASC_KEY_P8` is the base64 of the `.p8` file. |
+| `APPLE_TEAM_ID` | Team `4PX34WYHUB` |
+| `ASC_APP_ID` | App Store Connect app `6823228464`. It is also hard-coded as the default in the Fastfile, Appfile and `eas.json`, because it is not secret. |
+| `DIST_CERT_P12`, `DIST_CERT_PASSWORD` | The Apple Distribution certificate used by CI (base64 `.p12` file and its password) |
 
-Set them with `gh secret set NAME -R kroevasuperadmin/makan-hour` (it prompts for the value), or in the repo under **Settings → Secrets and variables → Actions**.
+Non-secret config: `DIST_CERT_ID=9A4L95TSR4` is set in the workflow, and fastlane uses it as the fallback.
 
-## What Faris needs to do
+## Signing and the certificate cap
+
+- The CI certificate (`9A4L95TSR4`, expires 15 Oct 2027) was created **once**, from the box, through the App Store Connect API. CI only imports it from `DIST_CERT_P12` and never creates certificates, so repeated runs cannot use up Apple's per-team certificate limit. The lane fails early if the secret is missing.
+- The App Store provisioning profile is fetched, or recreated, by `get_provisioning_profile` for that certificate on each run. Profiles have no practical limit.
+- The team now has two Apple Distribution certificates: Faris's existing one (`786DD866YQ`) and this CI one. Leave both in place.
+- Backups are on the box only, in `/home/box/secrets/` (mode 600): the `.p8` (the only copy), plus `dist_ci.key`, `.cer`, `.p12` and `.p12.pass`.
+- Before the certificate expires in Oct 2027, make a new one the same way, then update `DIST_CERT_P12`, `DIST_CERT_PASSWORD` and `DIST_CERT_ID`.
+
+## Steps (1–3 are done)
 
 1. **Join the Apple Developer Program** (USD 99 a year) for the team that will own the app.
 2. **Create an App Store Connect API key:** App Store Connect → Users and Access → Integrations → App Store Connect API → Team Keys → *Generate*.
