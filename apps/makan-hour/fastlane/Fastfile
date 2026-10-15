@@ -11,6 +11,15 @@ DIST_CERT_ID = ENV["DIST_CERT_ID"].to_s.empty? ? "9A4L95TSR4" : ENV["DIST_CERT_I
 platform :ios do
   desc "Build and upload to TestFlight"
   lane :beta do
+    # Expo SDK 57 needs Xcode 26.4+ (and not 27, which needs scene support on SDK 57).
+    # Pick the newest installed Xcode 26.x >= 26.4, whatever the workflow's xcode-select did.
+    if ENV["CI"]
+      found = Dir["/Applications/Xcode_26*.app"].map { |p| [p, p[/Xcode_([\d.]+)/, 1]] }.select { |_, v| v }
+      UI.message("Installed Xcodes: #{Dir['/Applications/Xcode*.app'].sort.join(', ')}")
+      ok = found.select { |_, v| Gem::Version.new(v) >= Gem::Version.new("26.4") }.max_by { |_, v| Gem::Version.new(v) }
+      UI.user_error!("No Xcode 26.4+ on this runner; switch runs-on to macos-26") unless ok
+      xcode_select(ok[0])
+    end
     setup_ci # temporary keychain on CI runners
 
     api_key = app_store_connect_api_key(
