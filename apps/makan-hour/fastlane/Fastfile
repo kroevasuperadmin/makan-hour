@@ -14,10 +14,18 @@ platform :ios do
     # Expo SDK 57 needs Xcode 26.4+ (and not 27, which needs scene support on SDK 57).
     # Pick the newest installed Xcode 26.x >= 26.4, whatever the workflow's xcode-select did.
     if ENV["CI"]
-      found = Dir["/Applications/Xcode_26*.app"].map { |p| [p, p[/Xcode_([\d.]+)/, 1]] }.select { |_, v| v }
-      UI.message("Installed Xcodes: #{Dir['/Applications/Xcode*.app'].sort.join(', ')}")
-      ok = found.select { |_, v| Gem::Version.new(v) >= Gem::Version.new("26.4") }.max_by { |_, v| Gem::Version.new(v) }
-      UI.user_error!("No Xcode 26.4+ on this runner; switch runs-on to macos-26") unless ok
+      apps = Dir["/Applications/Xcode*.app"].uniq.sort
+      UI.message("Installed Xcodes: #{apps.join(', ')}")
+      # Skip "Xcode.app" aliases (trailing dot) and pick the newest Xcode_26.x >= 26.4.
+      cand = apps.filter_map do |p|
+        next unless (m = File.basename(p).match(/\AXcode_(\d+(?:\.\d+)*)\z/))
+        ver = Gem::Version.new(m[1]) rescue next
+        next unless ver >= Gem::Version.new("26.4") && ver < Gem::Version.new("27")
+        [p, ver]
+      end
+      ok = cand.max_by { |_, v| v }
+      UI.user_error!("No Xcode 26.4–26.x on this runner (need macos-26). Installed: #{apps.join(', ')}") unless ok
+      UI.success("Selecting #{ok[0]} (#{ok[1]})")
       xcode_select(ok[0])
     end
     setup_ci # temporary keychain on CI runners
