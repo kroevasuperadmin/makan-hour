@@ -9,7 +9,7 @@ export const caterers: Caterer[] = [
 export const dishes: Dish[] = [
   { id: 'd1', catererId: 'c1', name: 'Nasi Ayam Hainan', description: 'Roasted chicken, chicken-stock rice, chilli-ginger sauce, sup sayur', priceSen: 1390, tags: ['Mild'] },
   { id: 'd2', catererId: 'c1', name: 'Nasi Lemak Ayam Berempah', description: 'Spiced fried chicken, sambal, ikan bilis, egg, cucumber', priceSen: 1450, tags: ['Spicy'] },
-  { id: 'd3', catererId: 'c2', name: 'Mee Goreng Mamak', description: 'Wok-fried yellow noodles, tofu, prawn fritter, lime', priceSen: 1150, tags: ['Medium'] },
+  { id: 'd3', catererId: 'c2', name: 'Mee Goreng Mamak', description: 'Wok-fried yellow noodles, tofu, prawn fritter, lime', priceSen: 1200, tags: ['Medium'] },
   { id: 'd4', catererId: 'c2', name: 'Vegetable Briyani Set', description: 'Basmati briyani, dhal, three vegetables, raita', priceSen: 1250, tags: ['Vegetarian'] },
   { id: 'd5', catererId: 'c1', name: 'Nasi Kandar Ayam Madu', description: 'Honey-glazed chicken, mixed curry, cabbage, papadom', priceSen: 1790, tags: ['Medium'] },
 ];
@@ -63,7 +63,8 @@ export const CUTOFF = 10 * 3600 + 30 * 60; // 10:30
 export const DUE = 12 * 3600 + 15 * 60; // 12:15
 // What the company pays per person per day. Anything above it is a staff top-up.
 export const ALLOWANCE_SEN = 1500;
-export const DROP_FEE_SEN = 900; // per drop, per office (Pack B: RM8-9.20)
+// Office service fee per meal. Delivery is included in it.
+export const SERVICE_FEE_SEN = 200;
 
 export function seedDrops(): Drop[] {
   return offices.map((o, i) => ({ officeId: o.id, catererId: 'c1', stage: 0, dueAt: DUE + i * 600, delayMin: 0, delayNotifiedAt: null, deliveredAt: null, rider: ['Rider 07 · Faiz', 'Rider 03 · Hong', 'Rider 07 · Faiz'][i] }));
@@ -74,8 +75,7 @@ export function seedInvoice(): Invoice {
     id: 'MH-INV-2026-10-0012', officeId: 'o1', period: 'October 2026', issuedOn: '31 Oct 2026', dueOn: '14 Nov 2026',
     lines: [
       { label: 'Lunch orders', detail: '612 meals across 21 working days', amountSen: 821460 },
-      { label: 'Office drops', detail: '21 drops × RM 9.00', amountSen: 21 * DROP_FEE_SEN },
-      { label: 'Platform fee', detail: '6% of lunch orders', amountSen: 49288 },
+      { label: 'Service fee', detail: '612 meals × RM 2.00, delivery included', amountSen: 612 * SERVICE_FEE_SEN },
       { label: 'Subsidy credit', detail: 'Launch-month credit', amountSen: -20000 },
     ],
     status: 'unpaid', paidRef: null, paidVia: null,

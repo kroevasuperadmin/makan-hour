@@ -141,8 +141,8 @@ function Terms() {
   return (
     <Card style={{ marginTop: space.xl }}>
       <T v="label">Your terms with Makan Hour</T><Gap h={space.s} />
-      <T v="h2">No listing fee</T>
-      <T v="small">Being on the menu costs nothing: no sign-up fee, no monthly fee, no charge per dish listed. Makan Hour earns a commission only on meals you sell, at the rate in your partner agreement.</T>
+      <T v="h2">15% commission, no listing fee</T>
+      <T v="small">Makan Hour takes 15% of each meal you sell through it. There is no sign-up fee, no monthly fee and no charge per dish listed.</T>
     </Card>
   );
 }

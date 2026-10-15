@@ -77,7 +77,7 @@ Reset from the admin phone first.
 | 1:30 | B | Show spend against budget and who hasn't ordered. Tap *Nudge all* | "HR sees who's in and what it costs, live." |
 | 2:15 | B | Tap **Run the 10:30 am cutoff now** | "At 10:30 the orders lock." Phone A now says ordering has closed. |
 | 2:30 | C | *Confirm batch*, then *Labels*: his name and desk are on a label | "The caterer gets one list, not 30 chats, with every bag labelled by name and desk. This is the software we will license." |
-| 3:15 | C | *Drops*: *Mark preparing*, *Mark out for delivery*, then *Traffic +12* | "Each office gets one rider making one stop. That drop costs about RM 9, split across the whole office. If the rider is running late, everyone gets an alert 27 minutes before the food is due." |
+| 3:15 | C | *Drops*: *Mark preparing*, *Mark out for delivery*, then *Traffic +12* | "Each office gets one rider making one stop. Delivery is part of the RM 2 a meal the office pays, so staff never see a delivery fee. If the rider is running late, everyone gets an alert 27 minutes before the food is due." |
 | 3:40 | A | The amber delay alert has appeared | |
 | 3:50 | C, then A | *Mark delivered*. Phone A: "Lunch is at Level 12 pantry." | |
 | 4:00 | B | *Invoice*, then *Pay with FPX B2B (sandbox)*, pick a bank, *Continue*, *Approve* | "Finance gets one invoice a month instead of 30 receipts. This is a sandbox, so no money moves." |
