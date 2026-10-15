@@ -1,0 +1,24 @@
+{
+  "name": "makan-hour",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "employee": "npm --workspace @makan/employee run start",
+    "admin": "npm --workspace @makan/admin run start",
+    "kitchen": "npm --workspace @makan/kitchen run start",
+    "build:web": "for a in employee admin kitchen; do (cd apps/$a && npx expo export --platform web) || exit 1; done",
+    "e2e": "node scripts/demo-e2e.mjs",
+    "typecheck": "for a in employee admin kitchen; do (cd apps/$a && npx tsc --noEmit) || exit 1; done"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1",
+    "@expo-google-fonts/instrument-serif": "^0.4.1",
+    "@expo-google-fonts/manrope": "^0.4.2",
+    "@expo-google-fonts/ibm-plex-sans": "^0.4.0",
+    "@expo-google-fonts/ibm-plex-mono": "^0.4.0",
+    "@expo-google-fonts/barlow-condensed": "^0.4.0"
+  }
+}

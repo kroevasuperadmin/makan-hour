@@ -1,0 +1,31 @@
+{
+  "name": "@makan/kitchen",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~57.0.17",
+    "expo": "~57.0.29",
+    "expo-font": "~57.0.4",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-svg": "15.15.4",
+    "react-native-web": "^0.21.2",
+    "@makan/core": "*",
+    "@makan/ui": "*",
+    "@supabase/supabase-js": "^2.45.0",
+    "react-native-url-polyfill": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "playwright": "^1.64.1",
+    "typescript": "~6.0.3"
+  }
+}

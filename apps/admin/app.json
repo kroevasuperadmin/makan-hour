@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Makan Hour Admin",
+    "slug": "makan-hour-admin",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "my.makanhour.admin",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#16222E",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "my.makanhour.admin"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "bundler": "metro",
+      "name": "Makan Hour Admin",
+      "shortName": "Makan Hour Admin"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "scheme": "makan-hour-admin",
+    "backgroundColor": "#F5F3EE"
+  }
+}

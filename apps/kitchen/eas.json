@@ -1,0 +1,10 @@
+{
+  "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
+  "build": {
+    "preview": { "distribution": "internal", "environment": "preview" },
+    "production": { "environment": "production", "autoIncrement": true, "ios": { "resourceClass": "default" } }
+  },
+  "submit": {
+    "production": { "ios": { "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID_FOR_my.makanhour.kitchen" } }
+  }
+}
