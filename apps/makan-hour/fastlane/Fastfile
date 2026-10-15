@@ -18,7 +18,7 @@ platform :ios do
       UI.message("Installed Xcodes: #{apps.join(', ')}")
       # Skip "Xcode.app" aliases (trailing dot) and pick the newest Xcode_26.x >= 26.4.
       cand = apps.filter_map do |p|
-        next unless (m = File.basename(p).match(/\AXcode_(\d+(?:\.\d+)*)\z/))
+        next unless (m = File.basename(p, ".app").match(/\AXcode_(\d+(?:\.\d+)*)\z/))
         ver = Gem::Version.new(m[1]) rescue next
         next unless ver >= Gem::Version.new("26.4") && ver < Gem::Version.new("27")
         [p, ver]
