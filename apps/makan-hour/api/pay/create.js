@@ -6,7 +6,9 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   if (!configured()) return res.status(503).json({ error: 'Payments are not set up on this server yet (Stripe key missing).' });
-  const { kind, ref, amountSen, email, description } = req.body || {};
+  const { kind, ref, amountSen, email, description, real } = req.body || {};
+  // The key is live. Demo accounts get the mock flow so nobody pays real money for a sample invoice.
+  if (!testMode() && real !== true) return res.status(403).json({ error: 'Demo accounts use the mock payment flow. Sign up an office to pay for real.', demo: true });
   const amount = Math.round(Number(amountSen));
   // Stripe FPX takes RM 2.00 to RM 30,000.00 per payment.
   if (!['invoice', 'topup'].includes(kind) || !ref || !(amount >= 200 && amount <= 3000000)) return res.status(400).json({ error: 'Bad payment request' });

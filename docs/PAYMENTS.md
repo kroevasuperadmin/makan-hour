@@ -15,3 +15,7 @@ Until `STRIPE_SECRET_KEY` is set, `create` answers 503. The app then says online
 Vercel env on `makan-hour-app` (never in git): `STRIPE_SECRET_KEY` (start with `sk_test_` for a dry run), `STRIPE_WEBHOOK_SECRET` (from the webhook endpoint created for `https://makan-hour-app.vercel.app/api/pay/webhook`, for events `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed`).
 
 FPX only works on a Stripe account registered in Malaysia, and has to be switched on under Settings → Payment methods. Stripe takes FPX payments between RM 2 and RM 30,000.
+
+## Live key and the demo
+
+The production key is live (Malaysian account, `fpx_payments` and `card_payments` active). The webhook endpoint `we_1UQxspBLD4oA35QkSrx8b13I` points at `/api/pay/webhook`. To keep the demo from taking real money, the server refuses to create a live Checkout Session unless the request comes from a real signed-up account (`real: true`, set by the app after Supabase sign-in). The three demo accounts get a 403 and the app falls back to the mock FPX flow.

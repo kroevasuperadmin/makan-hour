@@ -12,6 +12,7 @@ export default function PayButton(p: Props) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [off, setOff] = useState(false);
+  const [offMsg, setOffMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!bill) return;
@@ -29,14 +30,15 @@ export default function PayButton(p: Props) {
       const b = await createCheckout({ kind: p.kind, ref: p.payRef, amountSen: p.amountSen, email: p.email, description: p.description });
       setBill(b); await Linking.openURL(b.url);
     } catch (e) {
-      if (e instanceof PayNotConfigured) setOff(true); else setErr(e instanceof Error ? e.message : 'Payment failed to start');
+      if (e instanceof PayNotConfigured) { setOff(true); setOffMsg(/demo/i.test(e.message) ? 'This is a demo account, so payments use the mock flow and nothing is charged.' : null); } else setErr(e instanceof Error ? e.message : 'Payment failed to start');
     } finally { setBusy(false); }
   };
 
+  const demoNote = offMsg || 'The payment server has no Stripe key yet. Nothing was charged.';
   if (off) return (
     <Card tone="warn">
-      <T v="h2" style={{ color: color.warn }}>Online payment isn't switched on yet</T>
-      <T v="small" style={{ color: color.warn }}>The payment server has no Stripe key yet. Nothing was charged.</T>
+      <T v="h2" style={{ color: color.warn }}>{offMsg ? 'Demo account: mock payment only' : "Online payment isn't switched on yet"}</T>
+      <T v="small" style={{ color: color.warn }}>{demoNote}</T>
       {p.onUnavailable && <><Gap h={space.m} /><Button testID="fpx-mock" kind="secondary" label="Walk through the mock flow instead" onPress={p.onUnavailable} /></>}
     </Card>
   );
