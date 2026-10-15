@@ -33,7 +33,7 @@ platform :ios do
       keychain_password: ""
     )
     # Profile is fetched or (re)created against that exact certificate. Profiles have no practical cap.
-    get_provisioning_profile(api_key: api_key, team_id: team_id, app_identifier: APP_ID, adhoc: false, development: false,
+    get_provisioning_profile(api_key: api_key, team_id: team_id, app_identifier: APP_ID,
                              cert_id: DIST_CERT_ID, output_path: "build/profiles", filename: "makanhour_appstore.mobileprovision")
     profile_name = lane_context[SharedValues::SIGH_NAME]
 
