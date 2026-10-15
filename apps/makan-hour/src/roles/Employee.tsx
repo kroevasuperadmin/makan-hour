@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { ALLOWANCE_SEN, CUTOFF, dish, hhmm, me, myOrder, rm, topUpSen, useStore } from '@makan/core';
-import FpxPay from '../FpxPay';
+import PayButton from '../PayButton';
 import { askPermission, useAlertOnChange, useRegisterPush } from '../notify';
 import { Badge, Button, Card, color, Divider, font, Gap, Icon, radius, Row, Screen, space, T } from '@makan/ui';
 
@@ -80,9 +80,9 @@ function ConfirmedPanel() {
       <T v="small" style={{ color: color.onAccentMuted, marginTop: space.xs }}>Order MH-{String(o.placedAt).slice(-4)} · {topUpSen(d.priceSen) ? `${s.offices.find(x => x.id === u.officeId)!.company} pays ${rm(ALLOWANCE_SEN)}, you pay ${rm(topUpSen(d.priceSen))}` : `paid by ${s.offices.find(x => x.id === u.officeId)!.company}`}</T>
       {topUpSen(d.priceSen) > 0 && <>
         <Gap h={space.m} />
-        {s.topUpPaidRef ? <T v="small" testID="topup-paid" style={{ color: color.onAccent, fontFamily: font.bodyStrong }}>Top-up {rm(topUpSen(d.priceSen))} paid by FPX · ref {s.topUpPaidRef}</T>
-          : <FpxPay testID="pay-topup" kind="topup" kindOfButton="secondary" payRef={`ord-me-${o.placedAt}`} amountSen={topUpSen(d.priceSen)} name={u.name} email="aina.rahman@example.com"
-              description={`Top-up for ${d.name}`} label={`Pay ${rm(topUpSen(d.priceSen))} top-up by FPX`} onPaid={id => dispatch({ t: 'topupPaid', ref: id })} />}
+        {s.topUpPaidRef ? <T v="small" testID="topup-paid" style={{ color: color.onAccent, fontFamily: font.bodyStrong }}>Top-up {rm(topUpSen(d.priceSen))} paid · ref {s.topUpPaidRef}</T>
+          : <PayButton testID="pay-topup" kind="topup" kindOfButton="secondary" payRef={`ord-me-${o.placedAt}`} amountSen={topUpSen(d.priceSen)} email="aina.rahman@example.com"
+              description={`Top-up for ${d.name}`} label={`Pay ${rm(topUpSen(d.priceSen))} top-up`} onPaid={ref => dispatch({ t: 'topupPaid', ref })} />}
       </>}
       {!s.cutoffPassed && <>
         <Gap h={space.l} />

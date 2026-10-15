@@ -17,4 +17,4 @@ Needed before server push sends (Vercel env on `makan-hour-app`, never in git):
 | `APNS_PRODUCTION` | `1` (TestFlight and App Store builds use production APNs) |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | rizqey-admin project settings. Server only |
 
-Plus run `supabase/makan_topups_push.sql` once to create `makan_push_tokens` and `makan_drops.delay_pushed_at`.
+Plus run `supabase/makan_migration_2.sql` once to create `makan_push_tokens` and `makan_drops.delay_pushed_at`.

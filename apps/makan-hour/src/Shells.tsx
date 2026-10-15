@@ -9,6 +9,7 @@ import Admin from './roles/Admin';
 import Kitchen, { KitchenTab } from './roles/Kitchen';
 import { Wordmark } from './Wordmark';
 import { Account } from './accounts';
+import Team, { SampleNote } from './Team';
 
 type P = { account: Account; onSignOut: () => void };
 const LiveDot = () => { const { s } = useStore(); return <View testID="live-dot" style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: s.connected ? color.accent : color.faint }} />; };
@@ -16,7 +17,7 @@ const SignOut = ({ onPress, c }: { onPress: () => void; c: string }) => (
   <Pressable testID="sign-out" onPress={onPress} hitSlop={10} accessibilityLabel="Sign out"><T v="small" style={{ color: c, fontFamily: font.semi, textDecorationLine: 'underline' }}>Sign out</T></Pressable>
 );
 
-export function EmployeeShell({ onSignOut }: P) {
+export function EmployeeShell({ account, onSignOut }: P) {
   const { s } = useStore();
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }} edges={['top']}>
@@ -28,7 +29,7 @@ export function EmployeeShell({ onSignOut }: P) {
           <SignOut onPress={onSignOut} c={color.muted} />
         </Row>
       </Row>
-      <ScrollView key={`${!!myOrder(s)}-${s.cutoffPassed}`} style={{ flex: 1 }}><Employee /></ScrollView>
+      <ScrollView key={`${!!myOrder(s)}-${s.cutoffPassed}`} style={{ flex: 1 }}>{account.real && <SampleNote account={account} />}<Employee /></ScrollView>
     </SafeAreaView>
   );
 }
@@ -51,9 +52,9 @@ export function AdminShell({ account, onSignOut }: P) {
             <SignOut onPress={onSignOut} c={color.faint} />
           </Row>
         </Row>
-        <T v="small" style={{ color: color.faint, marginTop: 2 }}>{account.name} · {office.company} · Thu 22 Oct 2026</T>
+        <T v="small" style={{ color: color.faint, marginTop: 2 }}>{account.name} · {account.real ? account.org : office.company} · Thu 22 Oct 2026</T>
       </View>
-      <ScrollView style={{ flex: 1, backgroundColor: color.canvas }}><Admin /></ScrollView>
+      <ScrollView style={{ flex: 1, backgroundColor: color.canvas }}>{account.real && <><Gap h={space.xl} /><Team account={account} /><SampleNote account={account} /></>}<Admin /></ScrollView>
       <Modal visible={resetOpen} transparent animationType="fade" onRequestClose={() => setResetOpen(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(10,15,20,0.45)', justifyContent: 'center', padding: space.xl }}>
           <View style={{ backgroundColor: color.surface, borderRadius: radius.m, padding: space.xl, maxWidth: 420, width: '100%', alignSelf: 'center' }}>
@@ -74,7 +75,7 @@ export function AdminShell({ account, onSignOut }: P) {
 const TABS: { key: KitchenTab; label: string; icon: IconName }[] = [
   { key: 'batch', label: 'Batch', icon: 'bowl' }, { key: 'labels', label: 'Labels', icon: 'printer' }, { key: 'drops', label: 'Drops', icon: 'truck' },
 ];
-export function KitchenShell({ onSignOut }: P) {
+export function KitchenShell({ account, onSignOut }: P) {
   const { s } = useStore();
   const [tab, setTab] = useState<KitchenTab>('batch');
   const [cat, setCat] = useState('c1');
@@ -95,7 +96,7 @@ export function KitchenShell({ onSignOut }: P) {
           </Row>
         </View>
       </Row>
-      <ScrollView style={{ flex: 1 }}><Kitchen tab={tab} cat={cat} setCat={setCat} /></ScrollView>
+      <ScrollView style={{ flex: 1 }}>{account.real && <SampleNote account={account} />}<Kitchen tab={tab} cat={cat} setCat={setCat} /></ScrollView>
       <Row style={{ borderTopWidth: 1, borderTopColor: color.line, backgroundColor: color.surface }}>
         {TABS.map(t => {
           const on = t.key === tab;

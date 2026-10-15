@@ -53,7 +53,7 @@ npm run e2e                                   # screenshots go to docs/screens/{
 APP_URL=https://makan-hour-app.vercel.app NO_SHOTS=1 npm run e2e   # against production
 ```
 
-Deploy: copy `apps/makan-hour/dist` and `apps/makan-hour/api` (FPX routes, see docs/FPX.md) to a folder outside the repo, then run `vercel deploy --prod --name makan-hour-app` from there. Deploying from inside the monorepo uploads the source instead of the build.
+Deploy: copy `apps/makan-hour/dist` and `apps/makan-hour/api` (payment and push routes, see docs/PAYMENTS.md and docs/PUSH.md) to a folder outside the repo, then run `vercel deploy --prod --name makan-hour-app` from there. Deploying from inside the monorepo uploads the source instead of the build.
 
 ## Reset before the demo
 
@@ -92,7 +92,8 @@ Backup plan: if the venue Wi-Fi fails, use a pre-recorded screen video or `docs/
 - Two demos running at once would collide, because there is only one session.
 - Reminders and delay alerts are in-app only; there are no OS push notifications.
 - *Print PDF* on labels does nothing.
-- FPX B2B is a mock, not a Billplz or CHIP sandbox.
+- Online payment goes through Stripe Checkout (FPX and card) once `STRIPE_SECRET_KEY` is set; until then the invoice offers the FPX B2B mock.
+- Real sign-up (new office, invites, roles) needs `supabase/makan_migration_2.sql`. The three demo accounts and code 220126 work without it.
 - The invoice totals and month-to-date spend are seeded figures.
 - The demo clock is simulated and jumps forward at each step.
 

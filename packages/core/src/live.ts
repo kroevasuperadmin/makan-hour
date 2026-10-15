@@ -9,6 +9,7 @@ import { DEMO_START, seedDrops } from './seed';
 export const SESSION = 'demo';
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+export const SB_URL = url, SB_KEY = key;
 export const supabase: SupabaseClient | null = url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
 
 export interface LiveSession {

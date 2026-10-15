@@ -3,7 +3,7 @@ import { ActivityIndicator, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { adminFonts, adminPalette, applyTheme, color, employeeFonts, employeePalette, kitchenFonts, kitchenPalette } from '@makan/ui';
-import { StoreProvider } from '@makan/core';
+import { signOutReal, StoreProvider } from '@makan/core';
 import SignIn from './SignIn';
 import { AdminShell, EmployeeShell, KitchenShell } from './Shells';
 import { Account } from './accounts';
@@ -34,7 +34,7 @@ export default function App() {
   const th = THEMES[key];
   applyTheme(th.p, th.f, th.hero); // synchronous, before this render's children read the tokens
   if (!loaded) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: color.canvas }}><ActivityIndicator color={color.ink} /></View>;
-  const out = () => setAccount(null);
+  const out = () => { if (account?.real) signOutReal(); setAccount(null); };
   return (
     <SafeAreaProvider>
       <StoreProvider>

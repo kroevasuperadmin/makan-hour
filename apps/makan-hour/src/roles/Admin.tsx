@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { useWindowDimensions } from 'react-native';
 import { ALLOWANCE_SEN, CUTOFF, dish, hhmm, me, officeOrders, rm, topUpSen, useStore } from '@makan/core';
-import FpxPay from '../FpxPay';
+import PayButton from '../PayButton';
 import { useAlertOnChange, useRegisterPush } from '../notify';
 import { Badge, Bar, Button, Card, color, Divider, font, Gap, Icon, radius, Row, Screen, Segmented, space, T } from '@makan/ui';
 
@@ -45,7 +45,7 @@ function Today() {
         <Row style={{ gap: space.m }}>
           <View style={{ flex: 1 }}>
             <T v="h2">Allowance {rm(ALLOWANCE_SEN)} per person</T>
-            <T v="small">{s.topUpsAllowed ? `Top-ups on. Staff pay the difference themselves by FPX. ${topUps.length} today.` : 'Top-ups off. Staff only see dishes within the allowance.'}</T>
+            <T v="small">{s.topUpsAllowed ? `Top-ups on. Staff pay the difference themselves, by FPX or card. ${topUps.length} today.` : 'Top-ups off. Staff only see dishes within the allowance.'}</T>
           </View>
           <Pressable testID="toggle-topups" accessibilityRole="switch" accessibilityState={{ checked: s.topUpsAllowed }} onPress={() => dispatch({ t: 'topups', on: !s.topUpsAllowed })}
             style={{ width: 48, height: 28, borderRadius: 14, padding: 3, backgroundColor: s.topUpsAllowed ? color.accent : color.sunk, alignItems: s.topUpsAllowed ? 'flex-end' : 'flex-start' }}>
@@ -169,9 +169,9 @@ function Invoice() {
         <T v="small" style={{ marginTop: space.xs }}>Issued {inv.issuedOn}. Per-employee average {rm(Math.round(total / 612))} per meal, delivery included.</T>
       </Card>
       <Gap h={space.xl} />
-      {inv.status === 'unpaid' && <FpxPay testID="pay-invoice" kind="invoice" payRef={inv.id} amountSen={total} name={office.company} email="finance@example.com"
-        description={`Makan Hour invoice ${inv.id} (${inv.period})`} label={`Pay ${rm(total)} by FPX`}
-        onPaid={id => dispatch({ t: 'pay', via: 'FPX via Billplz', ref: id })} onUnavailable={() => setStep('bank')} />}
+      {inv.status === 'unpaid' && <PayButton testID="pay-invoice" kind="invoice" payRef={inv.id} amountSen={total} email="finance@example.com"
+        description={`Makan Hour invoice ${inv.id} (${inv.period})`} label={`Pay ${rm(total)} by FPX or card`}
+        onPaid={(ref, m) => dispatch({ t: 'pay', via: `Stripe · ${m === 'fpx' ? 'FPX' : m === 'card' ? 'Card' : 'online'}`, ref })} onUnavailable={() => setStep('bank')} />}
       <T v="small" style={{ marginTop: space.s }}>Staff top-ups above the allowance are paid by staff and never appear on this invoice.</T>
     </>
   );
