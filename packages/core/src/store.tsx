@@ -72,6 +72,7 @@ function apply(l: LiveState, a: Action, now: number): [LiveState, (() => Promise
   }
 }
 
+let queue: Promise<void> = Promise.resolve();
 const Ctx = createContext<{ s: State; dispatch: (a: Action) => void } | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
@@ -103,7 +104,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setLive(next);
     if (!supabase) return;
     pending.current++;
-    (async () => { try { for (const w of writes) await w(); } catch { setConnected(false); } finally { pending.current--; refresh(); } })();
+    // Writes go through one queue so rapid taps land in the database in the order they were made.
+    queue = queue.then(async () => { try { for (const w of writes) await w(); } catch { setConnected(false); } finally { pending.current--; refresh(); } });
   }, [refresh]);
 
   const s = useMemo(() => derive(live, now, connected), [live, now, connected]);

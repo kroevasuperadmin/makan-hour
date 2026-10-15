@@ -6,12 +6,10 @@
     "packages/*"
   ],
   "scripts": {
-    "employee": "npm --workspace @makan/employee run start",
-    "admin": "npm --workspace @makan/admin run start",
-    "kitchen": "npm --workspace @makan/kitchen run start",
-    "build:web": "for a in employee admin kitchen; do (cd apps/$a && npx expo export --platform web) || exit 1; done",
+    "start": "npm --workspace @makan/app run start",
+    "build:web": "cd apps/makan-hour && npx expo export --platform web",
     "e2e": "node scripts/demo-e2e.mjs",
-    "typecheck": "for a in employee admin kitchen; do (cd apps/$a && npx tsc --noEmit) || exit 1; done"
+    "typecheck": "cd apps/makan-hour && npx tsc --noEmit"
   },
   "devDependencies": {
     "playwright": "^1.64.1",

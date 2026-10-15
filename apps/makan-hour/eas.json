@@ -5,6 +5,6 @@
     "production": { "environment": "production", "autoIncrement": true, "ios": { "resourceClass": "default" } }
   },
   "submit": {
-    "production": { "ios": { "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID_FOR_my.makanhour.app" } }
+    "production": { "ios": { "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID" } }
   }
 }

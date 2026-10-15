@@ -1,13 +1,10 @@
-// Three-device click-through of the demo. Each app runs in its own browser context
-// (like three phones); state syncs through Supabase in real time.
-// URLs default to local static servers: employee :8091, admin :8092, kitchen :8093.
+// Three-device click-through of the demo: one app, three browser contexts (like three phones),
+// each signed in as a different demo account. State syncs through Supabase in real time.
+// APP_URL defaults to a local static server on :8091.
 import { chromium } from 'playwright';
 import { mkdirSync } from 'fs';
-const U = {
-  employee: process.env.EMPLOYEE_URL || 'http://localhost:8091',
-  admin: process.env.ADMIN_URL || 'http://localhost:8092',
-  kitchen: process.env.KITCHEN_URL || 'http://localhost:8093',
-};
+const APP = process.env.APP_URL || 'http://localhost:8091';
+const ROLE = { employee: 'employee', admin: 'admin', kitchen: 'caterer' };
 const OUT = process.env.OUT || new globalThis.URL('../docs/screens/', import.meta.url).pathname;
 const SHOTS = process.env.NO_SHOTS ? false : true;
 const b = await chromium.launch();
@@ -17,10 +14,16 @@ async function open(name) {
   const p = await ctx.newPage();
   p.on('pageerror', e => errs.push(`${name}: ${e.message}`));
   p.on('console', m => m.type() === 'error' && errs.push(`${name}: ${m.text()}`));
-  await p.goto(U[name]); await p.waitForSelector('[data-testid=clock]');
   mkdirSync(OUT + name, { recursive: true });
   const t = id => p.locator(`[data-testid="${id}"]`).first();
   const shot = async n => { if (!SHOTS) return; await p.waitForTimeout(500); await p.screenshot({ path: `${OUT}${name}/${n}.png` }); console.log('shot', name, n); };
+  await p.goto(APP); await t('send-code').waitFor();
+  if (name === 'employee') { mkdirSync(OUT + 'signin', { recursive: true }); if (SHOTS) { await p.waitForTimeout(400); await p.screenshot({ path: `${OUT}signin/01-sign-in.png` }); } }
+  await t(`account-${ROLE[name]}`).click(); await t('code-input').waitFor();
+  await t('code-input').fill('111111'); await t('verify').click(); await p.getByText('doesn’t match').first().waitFor(); // wrong code is rejected
+  await t('fill-code').click();
+  if (name === 'employee' && SHOTS) { await p.waitForTimeout(300); await p.screenshot({ path: `${OUT}signin/02-code.png` }); }
+  await t('verify').click(); await t('clock').waitFor();
   return { p, t, shot };
 }
 const live = 15000; // max wait for a change to arrive from another device
@@ -67,10 +70,14 @@ await A.t('to-approve').click(); await A.shot('07-fpx-sandbox-approve');
 await A.t('approve-pay').click(); await A.t('paid-panel').waitFor(); await A.shot('08-invoice-paid');
 if (SHOTS) { await A.p.setViewportSize({ width: 1180, height: 820 }); await A.p.waitForTimeout(600); await A.p.screenshot({ path: `${OUT}admin/09-tablet-landscape.png` }); console.log('shot admin 09-tablet-landscape'); }
 
+// sign-out returns to sign-in
+await K.t('sign-out').click(); await K.t('send-code').waitFor();
+await E.t('sign-out').click(); await E.t('send-code').waitFor();
 // leave the shared demo clean
 const box2 = await A.t('brand').boundingBox();
 await A.p.mouse.move(box2.x + 20, box2.y + 10); await A.p.mouse.down(); await A.p.waitForTimeout(1900); await A.p.mouse.up();
-await A.t('confirm-reset').click(); await E.t('dish-d1').waitFor({ timeout: live });
+await A.t('confirm-reset').click(); await A.p.waitForTimeout(2500);
+await A.t('sign-out').click(); await A.t('send-code').waitFor();
 const real = errs.filter(e => !/WebSocket|realtime/i.test(e));
 console.log('ERRORS:', JSON.stringify(real));
 await b.close();
