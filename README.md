@@ -12,7 +12,7 @@ B2B office lunch pre-order drops for one Klang Valley district. Employees order 
 
 All three share the bowl mark and the serif "Makan Hour" wordmark. Sign-in uses a mock one-time code: no email is sent and the demo code is **220126** (the screen shows it, and *Paste demo code* fills it in). *Sign out* (top right) goes back to sign-in.
 
-Live web build: **https://makan-hour-app.vercel.app**
+Live web build: **https://makanhour.rizqey.com/app** (proxied by makan-hour-site to the makan-hour-app project, built with baseUrl /app; makan-hour-app.vercel.app redirects there except /api/*)
 
 Sign-in: see docs/AUTH.md.
 
@@ -52,7 +52,7 @@ npm run build:web
 python3 -m http.server 8091 -d apps/makan-hour/dist &
 npx playwright install chromium
 npm run e2e                                   # screenshots go to docs/screens/{signin,employee,admin,kitchen}/
-APP_URL=https://makan-hour-app.vercel.app NO_SHOTS=1 npm run e2e   # against production
+APP_URL=https://makanhour.rizqey.com/app NO_SHOTS=1 npm run e2e   # against production
 ```
 
 Deploy: copy `apps/makan-hour/dist` and `apps/makan-hour/api` (payment and push routes, see docs/PAYMENTS.md and docs/PUSH.md) to a folder outside the repo, then run `vercel deploy --prod --name makan-hour-app` from there. Deploying from inside the monorepo uploads the source instead of the build.

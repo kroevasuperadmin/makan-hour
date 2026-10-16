@@ -1,4 +1,11 @@
 {
-  "rewrites": [{ "source": "/metrics", "destination": "/api/metrics" }],
+  "redirects": [
+    { "source": "/((?!api/).*)", "missing": [{ "type": "query", "key": "mhp" }], "destination": "https://makanhour.rizqey.com/app/$1", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/metrics", "destination": "/api/metrics" },
+    { "source": "/app/metrics", "destination": "/api/metrics" },
+    { "source": "/app/:path*", "destination": "/app/index.html" }
+  ],
   "crons": [{ "path": "/api/agents/daily", "schedule": "0 6 * * *" }]
 }

@@ -46,6 +46,9 @@
       "expo-apple-authentication"
     ],
     "scheme": "makan-hour",
-    "backgroundColor": "#F5F3EE"
+    "backgroundColor": "#F5F3EE",
+    "experiments": {
+      "baseUrl": "/app"
+    }
   }
 }

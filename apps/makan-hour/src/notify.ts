@@ -39,7 +39,7 @@ export async function notify(title: string, body: string) {
   } catch { /* the in-app banner still shows */ }
 }
 
-const API = (process.env.EXPO_PUBLIC_API_URL || 'https://makan-hour-app.vercel.app').replace(/\/$/, '');
+const API = (process.env.EXPO_PUBLIC_API_URL || 'https://makanhour.rizqey.com/app').replace(/\/$/, '');
 
 // Registers this iPhone's APNs token with our server so late-drop alerts arrive with the app closed.
 export async function registerForPush(role: 'employee' | 'admin') {

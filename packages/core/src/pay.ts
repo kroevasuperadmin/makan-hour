@@ -1,6 +1,6 @@
 // Payments through Stripe Checkout (FPX and card, MYR). The secret key never ships in the app:
 // the app calls our server routes (apps/makan-hour/api/pay/*), which hold the key.
-const API = (process.env.EXPO_PUBLIC_API_URL || 'https://makan-hour-app.vercel.app').replace(/\/$/, '');
+const API = (process.env.EXPO_PUBLIC_API_URL || 'https://makanhour.rizqey.com/app').replace(/\/$/, '');
 
 export type Checkout = { id: string; url: string; test: boolean };
 export type CheckoutState = { id: string; paid: boolean; state: string; amountSen: number; method: string | null; ref: string | null };

@@ -12,7 +12,7 @@ module.exports = async (req, res) => {
   const amount = Math.round(Number(amountSen));
   // Stripe FPX takes RM 2.00 to RM 30,000.00 per payment.
   if (!['invoice', 'topup'].includes(kind) || !ref || !(amount >= 200 && amount <= 3000000)) return res.status(400).json({ error: 'Bad payment request' });
-  const host = `https://${req.headers['x-forwarded-host'] || req.headers.host}`;
+  const host = (process.env.APP_URL || 'https://makanhour.rizqey.com/app').replace(/\/$/, '');
   try {
     const s = await stripe('/checkout/sessions', {
       mode: 'payment', payment_method_types: { 0: 'fpx', 1: 'card' }, customer_email: email || undefined,

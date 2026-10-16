@@ -82,7 +82,7 @@ export async function signUpReady(): Promise<boolean> {
   return !(error && MISSING.has(error.code ?? ''));
 }
 // Deletes the signed-in user's account through the server route apps/makan-hour/api/account/delete.js.
-const API = (process.env.EXPO_PUBLIC_API_URL || 'https://makan-hour-app.vercel.app').replace(/\/$/, '');
+const API = (process.env.EXPO_PUBLIC_API_URL || 'https://makanhour.rizqey.com/app').replace(/\/$/, '');
 export async function deleteMyAccount() {
   const { data } = await db().auth.getSession();
   const t = data.session?.access_token;

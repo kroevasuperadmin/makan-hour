@@ -14,6 +14,6 @@
 | Caterer onboarding (halal cert, contract) | none | — | manual |
 
 Every action writes one row to `agent_task_log`. Outputs (manifests, reports, drafts) go to `makan_agent_outputs`.
-Metrics: `https://makan-hour-app.vercel.app/metrics?k=<METRICS_SECRET>`.
+Metrics: `https://makanhour.rizqey.com/app/metrics?k=<METRICS_SECRET>`.
 Setup: `supabase/makan_migration_4.sql`, then `supabase/makan_migration_4_cron.sql` with the secret filled in.
 Vercel env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET, METRICS_SECRET, SUPPORT_AGENT_ON. Deploy: `scripts/deploy-web.sh`.
