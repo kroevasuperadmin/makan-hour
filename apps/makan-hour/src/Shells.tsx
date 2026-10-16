@@ -10,6 +10,7 @@ import Kitchen, { KitchenTab } from './roles/Kitchen';
 import { Wordmark } from './Wordmark';
 import { Account } from './accounts';
 import Team, { SampleNote } from './Team';
+import { DeleteAccount } from './DeleteAccount';
 
 type P = { account: Account; onSignOut: () => void };
 const LiveDot = () => { const { s } = useStore(); return <View testID="live-dot" style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: s.connected ? color.accent : color.faint }} />; };
@@ -26,6 +27,7 @@ export function EmployeeShell({ account, onSignOut }: P) {
         <Wordmark />
         <Row style={{ gap: space.m }}>
           <Row style={{ gap: space.s }}><LiveDot /><T v="small" style={{ fontFamily: font.mono, color: color.ink2 }} testID="clock">{hhmm(s.clock)}</T></Row>
+          <DeleteAccount account={account} onDone={onSignOut} c={color.muted} />
           <SignOut onPress={onSignOut} c={color.muted} />
         </Row>
       </Row>
@@ -52,7 +54,10 @@ export function AdminShell({ account, onSignOut }: P) {
             <SignOut onPress={onSignOut} c={color.faint} />
           </Row>
         </Row>
-        <T v="small" style={{ color: color.faint, marginTop: 2 }}>{account.name} · {account.real ? account.org : office.company} · Thu 22 Oct 2026</T>
+        <Row style={{ justifyContent: 'space-between', gap: space.m, marginTop: 2 }}>
+          <T v="small" style={{ color: color.faint, flexShrink: 1 }}>{account.name} · {account.real ? account.org : office.company} · Thu 22 Oct 2026</T>
+          <DeleteAccount account={account} onDone={onSignOut} c={color.faint} />
+        </Row>
       </View>
       <ScrollView style={{ flex: 1, backgroundColor: color.canvas }}>{account.real && <><Gap h={space.xl} /><Team account={account} /><SampleNote account={account} /></>}<Admin /></ScrollView>
       <Modal visible={resetOpen} transparent animationType="fade" onRequestClose={() => setResetOpen(false)}>
@@ -94,6 +99,7 @@ export function KitchenShell({ account, onSignOut }: P) {
             <Row style={{ gap: space.xs }}><LiveDot /><T v="small">{s.connected ? 'Live' : 'Offline'}</T></Row>
             <SignOut onPress={onSignOut} c={color.muted} />
           </Row>
+          <View style={{ marginTop: space.xs }}><DeleteAccount account={account} onDone={onSignOut} c={color.muted} /></View>
         </View>
       </Row>
       <ScrollView style={{ flex: 1 }}>{account.real && <SampleNote account={account} />}<Kitchen tab={tab} cat={cat} setCat={setCat} /></ScrollView>

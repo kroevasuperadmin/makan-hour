@@ -81,3 +81,14 @@ export async function signUpReady(): Promise<boolean> {
   const { error } = await auth.rpc('makan_claim_invites');
   return !(error && MISSING.has(error.code ?? ''));
 }
+// Deletes the signed-in user's account through the server route apps/makan-hour/api/account/delete.js.
+const API = (process.env.EXPO_PUBLIC_API_URL || 'https://makan-hour-app.vercel.app').replace(/\/$/, '');
+export async function deleteMyAccount() {
+  const { data } = await db().auth.getSession();
+  const t = data.session?.access_token;
+  if (!t) throw new Error('Your session has expired. Sign in again, then delete.');
+  const r = await fetch(`${API}/api/account/delete`, { method: 'POST', headers: { authorization: `Bearer ${t}`, 'content-type': 'application/json' }, body: '{}' });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || `Deletion failed (${r.status})`);
+  await signOutReal();
+}
