@@ -10,7 +10,7 @@ import { appleAvailable, nativeApple, Provider, PROVIDER_NAME, returnUrl, signIn
 
 // Microsoft stays off the phone apps until the Azure provider is configured. The web keeps the
 // button and its "not switched on yet" message.
-const azureShown = Platform.OS === 'web' || process.env.EXPO_PUBLIC_AZURE_ON === '1';
+const azureShown = Platform.OS === 'web' || process.env.EXPO_PUBLIC_AZURE_ON !== '0';
 const ROLE_WORD = { admin: 'Office admin', employee: 'Staff', caterer: 'Caterer' } as const;
 // Which doors each role gets. Apple sits next to Google for staff (App Store guideline 4.8).
 const OPTIONS: Record<Role, { providers: Provider[]; password: boolean }> = {

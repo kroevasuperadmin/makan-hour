@@ -6,13 +6,19 @@
   "build": {
     "preview": {
       "distribution": "internal",
-      "environment": "preview"
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_AZURE_ON": "1"
+      }
     },
     "production": {
       "environment": "production",
       "autoIncrement": true,
       "ios": {
         "resourceClass": "default"
+      },
+      "env": {
+        "EXPO_PUBLIC_AZURE_ON": "1"
       }
     }
   },
