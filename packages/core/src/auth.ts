@@ -1,5 +1,6 @@
-// Real sign-up and sign-in with Supabase Auth email codes. Tables and functions come from
-// supabase/makan_migration_2.sql. Until it has run, calls throw NotSetUp and the app says so.
+// Real sign-up and sign-in with Supabase Auth: Google, Microsoft, Apple and email + password.
+// The identity only proves who someone is; the role comes from makan_members, set by an office
+// admin. Tables and functions come from supabase/makan_migration_2.sql and _3.sql. Until it has run, calls throw NotSetUp and the app says so.
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { SB_KEY, SB_URL } from './live';
 import { Role } from './types';
@@ -15,19 +16,45 @@ function check<T>(r: { data: T; error: { code?: string; message: string } | null
 }
 // A separate client: once someone signs in, this one sends their user token. The shared demo
 // tables stay on the anon client in live.ts, which keeps working for everyone.
-const auth: SupabaseClient | null = SB_URL && SB_KEY ? createClient(SB_URL, SB_KEY, { auth: { persistSession: false, autoRefreshToken: true, storageKey: 'makan-auth' } }) : null;
+// On the web the OAuth round trip reloads the page, so the session and PKCE verifier live in
+// localStorage. Native keeps them in memory: the in-app browser returns to the same process.
+const isWeb = typeof document !== 'undefined';
+const auth: SupabaseClient | null = SB_URL && SB_KEY ? createClient(SB_URL, SB_KEY, { auth: { flowType: 'pkce', persistSession: isWeb, detectSessionInUrl: isWeb, autoRefreshToken: true, storageKey: 'makan-auth' } }) : null;
+export const authClient = () => db();
+export { SB_URL, SB_KEY };
 const db = () => { if (!auth) throw new NotSetUp('No database configured'); return auth; };
 export const authAvailable = () => !!auth;
 export const normEmail = (e: string) => e.trim().toLowerCase();
 export const looksLikeEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 
-export async function sendCode(email: string) {
-  const { error } = await db().auth.signInWithOtp({ email: normEmail(email), options: { shouldCreateUser: true } });
-  if (error) throw new Error(error.message);
+const friendly = (m: string) =>
+  /invalid login credentials/i.test(m) ? 'That email and password don’t match.'
+  : /email not confirmed/i.test(m) ? 'Confirm your email first. The link is in your inbox.'
+  : /already registered/i.test(m) ? 'That email already has an account. Sign in instead.'
+  : /password should be/i.test(m) ? 'Use at least 8 characters for your password.'
+  : m;
+export async function signInPassword(email: string, password: string) {
+  const { error } = await db().auth.signInWithPassword({ email: normEmail(email), password });
+  if (error) throw new Error(friendly(error.message));
 }
-export async function verifyCode(email: string, token: string) {
-  const { error } = await db().auth.verifyOtp({ email: normEmail(email), token, type: 'email' });
-  if (error) throw new Error(error.message.includes('expired') || error.message.includes('invalid') ? 'That code is wrong or has expired.' : error.message);
+// Returns true when the account is ready, false when Supabase wants the address confirmed first.
+export async function signUpPassword(email: string, password: string, redirectTo: string): Promise<boolean> {
+  if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
+  const { data, error } = await db().auth.signUp({ email: normEmail(email), password, options: { emailRedirectTo: redirectTo } });
+  if (error) throw new Error(friendly(error.message));
+  return !!data.session;
+}
+export async function signedInEmail(): Promise<string | null> {
+  if (!auth) return null;
+  const { data } = await auth.auth.getSession();
+  return data.session?.user.email?.toLowerCase() ?? null;
+}
+export async function getAdminDomain(officeId: string): Promise<string | null> {
+  const r = check(await db().from('makan_offices').select('admin_domain').eq('id', officeId).maybeSingle()) as { admin_domain: string | null } | null;
+  return r?.admin_domain ?? null;
+}
+export async function setAdminDomain(officeId: string, domain: string) {
+  check(await db().rpc('makan_set_admin_domain', { p_office: officeId, p_domain: domain }));
 }
 export async function myMemberships(): Promise<Membership[]> {
   const rows = check(await db().rpc('makan_claim_invites')) as { member_id: string; office_id: string; company: string; building: string | null; role: Role; name: string | null }[];

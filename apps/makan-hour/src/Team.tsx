@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
-import { inviteMember, listMembers, looksLikeEmail, Member, NotSetUp, removeMember, Role, setMemberRole } from '@makan/core';
+import { getAdminDomain, inviteMember, listMembers, setAdminDomain, looksLikeEmail, Member, NotSetUp, removeMember, Role, setMemberRole } from '@makan/core';
 import { Badge, Button, Card, color, Divider, font, Gap, radius, Row, Segmented, space, T } from '@makan/ui';
 import { Account } from './accounts';
 
@@ -20,6 +20,14 @@ export default function Team({ account }: { account: Account }) {
     try { setMembers(await listMembers(officeId)); } catch (e) { setMsg({ ok: false, t: e instanceof NotSetUp ? 'Team management needs the latest database update.' : (e as Error).message }); }
   }, [officeId]);
   useEffect(() => { load(); }, [load]);
+  const [domain, setDomain] = useState(''), [savedDomain, setSavedDomain] = useState<string | null>(null);
+  useEffect(() => { getAdminDomain(officeId).then(d => { setSavedDomain(d); setDomain(d ?? ''); }).catch(() => {}); }, [officeId]);
+  const saveDomain = () => {
+    const d = domain.trim().replace(/^@/, '').toLowerCase();
+    if (d && !/^[a-z0-9.-]+\.[a-z]{2,}$/.test(d)) { setMsg({ ok: false, t: 'Enter a domain like contoh-capital.my.' }); return; }
+    if (d && !account.email.endsWith('@' + d)) { setMsg({ ok: false, t: `Your own email isn’t at ${d}, so this would lock you out.` }); return; }
+    act(async () => { await setAdminDomain(officeId, d); setSavedDomain(d || null); }, d ? `Only @${d} addresses can sign in as admin now.` : 'Any added email can sign in as admin.');
+  };
   const act = async (f: () => Promise<void>, ok: string) => {
     setBusy(true); setMsg(null);
     try { await f(); setMsg({ ok: true, t: ok }); await load(); }
@@ -30,7 +38,7 @@ export default function Team({ account }: { account: Account }) {
     if (!looksLikeEmail(email)) { setMsg({ ok: false, t: 'Enter a full email address.' }); return; }
     const e = email.trim().toLowerCase();
     act(async () => { await inviteMember(officeId, e, role, name); setEmail(''); setName(''); },
-      `${e} added as ${word(role).toLowerCase()}. They sign in with that email and a code, and land in the ${word(role).toLowerCase()} view.`);
+      `${e} added as ${word(role).toLowerCase()}. They sign in as ${word(role).toLowerCase()} with Google, Microsoft or a password on that address.`);
   };
   const input = { borderWidth: 1, borderColor: color.line, borderRadius: radius.s, paddingHorizontal: space.m, paddingVertical: space.m, fontFamily: font.body, fontSize: 15, color: color.ink, backgroundColor: color.surface } as const;
   return (
@@ -49,6 +57,16 @@ export default function Team({ account }: { account: Account }) {
         <Gap h={space.m} />
         <Button testID="invite-send" label={busy ? 'Adding…' : `Add as ${word(role).toLowerCase()}`} onPress={invite} disabled={busy || !email.includes('@')} />
         {msg && <T v="small" style={{ marginTop: space.s, color: msg.ok ? color.accent : color.danger }}>{msg.t}</T>}
+      </Card>
+      <Gap h={space.l} />
+      <Card>
+        <T v="label">Admin email domain</T><Gap h={space.s} />
+        <T v="small">Optional. When set, admins must sign in with an address at this domain, even if someone added them.</T>
+        <Gap h={space.s} />
+        <Row style={{ gap: space.s }}>
+          <TextInput testID="admin-domain" value={domain} onChangeText={setDomain} placeholder={account.email.split('@')[1] ?? 'company.my'} placeholderTextColor={color.faint} autoCapitalize="none" style={[input, { flex: 1 }]} />
+          <Button testID="admin-domain-save" kind="secondary" label="Save" onPress={saveDomain} disabled={busy || domain.trim().toLowerCase() === (savedDomain ?? '')} />
+        </Row>
       </Card>
       <Gap h={space.l} />
       <Card style={{ paddingVertical: space.xs }}>

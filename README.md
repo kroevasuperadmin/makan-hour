@@ -14,6 +14,8 @@ All three share the bowl mark and the serif "Makan Hour" wordmark. Sign-in uses 
 
 Live web build: **https://makan-hour-app.vercel.app**
 
+Sign-in: see docs/AUTH.md.
+
 All companies, banks and people are fictional. The payment step is a **sandbox mock**: no money moves and no bank is contacted.
 
 ## Layout
