@@ -8,6 +8,9 @@ import { Account, ACCOUNTS, DEMO_CODE } from './accounts';
 import { Wordmark } from './Wordmark';
 import { appleAvailable, nativeApple, Provider, PROVIDER_NAME, returnUrl, signInWith, stash, webReturnError } from './oauth';
 
+// Microsoft stays off the phone apps until the Azure provider is configured. The web keeps the
+// button and its "not switched on yet" message.
+const azureShown = Platform.OS === 'web' || process.env.EXPO_PUBLIC_AZURE_ON === '1';
 const ROLE_WORD = { admin: 'Office admin', employee: 'Staff', caterer: 'Caterer' } as const;
 // Which doors each role gets. Apple sits next to Google for staff (App Store guideline 4.8).
 const OPTIONS: Record<Role, { providers: Provider[]; password: boolean }> = {
@@ -22,7 +25,7 @@ const CHOICES: { role: Role; title: string; line: string; icon: 'users' | 'build
 ];
 const HEAD: Record<Role, { title: string; body: string }> = {
   employee: { title: 'Staff sign-in', body: 'Use the email your office admin added. Any option below works as long as it signs in with that address.' },
-  admin: { title: 'Office admin sign-in', body: 'Use your work Google or Microsoft account.' },
+  admin: { title: 'Office admin sign-in', body: azureShown ? 'Use your work Google or Microsoft account.' : 'Use your work Google account.' },
   caterer: { title: 'Caterer sign-in', body: 'Use the email the office added for your kitchen.' },
 };
 type Pending = { role: Role; signup?: { company: string; building: string; name: string } };
@@ -122,7 +125,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
   const link = { color: color.ink, fontFamily: font.bodyStrong, textDecorationLine: 'underline' } as const;
   const errLine = err && <T v="small" testID="signin-error" style={{ color: color.danger, marginTop: space.s }}>{err}</T>;
   const backLink = (label: string, onPress: () => void, id: string) => <><Pressable testID={id} onPress={onPress} hitSlop={10}><T v="small" style={link}>{label}</T></Pressable><Gap h={space.xl} /></>;
-  const providerButtons = (list: Provider[]) => list.filter(p => p !== 'apple' || apple).map(p => (
+  const providerButtons = (list: Provider[]) => list.filter(p => (p !== 'apple' || apple) && (p !== 'azure' || azureShown)).map(p => (
     <View key={p} style={{ marginBottom: space.s }}>
       {p === 'apple' && nativeApple()
         ? <AppleAuthentication.AppleAuthenticationButton buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE} buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK} cornerRadius={radius.s} style={{ height: 50, width: '100%' }} onPress={() => provider('apple')} />
