@@ -31,7 +31,7 @@ function Today() {
         <Card style={{ flex: 1 }}>
           <T v="label">Ordered</T><Gap h={space.s} />
           <Row style={{ alignItems: 'flex-end', gap: space.xs }}><T v="hero" testID="headcount">{orders.length}</T><T v="body" style={{ marginBottom: 6 }}>/ {staff.length}</T></Row>
-          <Gap h={space.s} /><Bar pct={orders.length / staff.length} tone={color.accent} />
+          <Gap h={space.s} /><Bar pct={orders.length / staff.length} />
         </Card>
         <Card style={{ flex: 1 }}>
           <T v="label">Spend today</T><Gap h={space.s} />
@@ -48,7 +48,7 @@ function Today() {
             <T v="small">{s.topUpsAllowed ? `Top-ups on. Staff pay the difference themselves, by FPX or card. ${topUps.length} today.` : 'Top-ups off. Staff only see dishes within the allowance.'}</T>
           </View>
           <Pressable testID="toggle-topups" accessibilityRole="switch" accessibilityState={{ checked: s.topUpsAllowed }} onPress={() => dispatch({ t: 'topups', on: !s.topUpsAllowed })}
-            style={{ width: 48, height: 28, borderRadius: 14, padding: 3, backgroundColor: s.topUpsAllowed ? color.accent : color.sunk, alignItems: s.topUpsAllowed ? 'flex-end' : 'flex-start' }}>
+            style={{ width: 48, height: 28, borderRadius: 14, padding: 3, backgroundColor: s.topUpsAllowed ? color.ink : color.sunk, alignItems: s.topUpsAllowed ? 'flex-end' : 'flex-start' }}>
             <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: color.surface }} />
           </Pressable>
         </Row>
@@ -83,8 +83,8 @@ function Today() {
             <Row style={{ paddingVertical: space.m, gap: space.m }}>
               <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: color.sunk, alignItems: 'center', justifyContent: 'center' }}><T v="small" style={{ color: color.ink2, fontFamily: font.bodyStrong }}>{e.name.split(' ').map(x => x[0]).join('').slice(0, 2)}</T></View>
               <View style={{ flex: 1 }}><T v="body" style={{ color: color.ink, fontFamily: font.semi }}>{e.name}</T><T v="small">{e.floor} · {e.desk}</T></View>
-              {s.cutoffPassed ? <Badge label="Missed" /> : s.nudged.includes(e.id) ? <Badge label="Reminded" tone="accent" /> :
-                <Pressable testID={`nudge-${e.id}`} onPress={() => dispatch({ t: 'nudge', ids: [e.id] })} style={{ borderWidth: 1, borderColor: color.line, borderRadius: radius.s, paddingHorizontal: space.m, paddingVertical: space.s }}>
+              {s.cutoffPassed ? <Badge label="Missed" /> : s.nudged.includes(e.id) ? <Badge label="Reminded" /> :
+                <Pressable testID={`nudge-${e.id}`} onPress={() => dispatch({ t: 'nudge', ids: [e.id] })} style={{ backgroundColor: color.sunk, borderRadius: radius.s, paddingHorizontal: space.m, minHeight: 44, justifyContent: 'center' }}>
                   <Row style={{ gap: space.xs }}><Icon name="bell" size={14} /><T v="small" style={{ color: color.ink, fontFamily: font.bodyStrong }}>Nudge</T></Row>
                 </Pressable>}
             </Row>
@@ -112,7 +112,7 @@ function Invoice() {
   const total = inv.lines.reduce((a, l) => a + l.amountSen, 0);
   if (step === 'bank' || step === 'approve') return (
     <>
-      <View testID="sandbox-banner" style={{ borderWidth: 2, borderColor: color.warn, borderStyle: 'dashed', borderRadius: radius.m, padding: space.m, backgroundColor: color.warnSoft }}>
+      <View testID="sandbox-banner" style={{ padding: space.m, backgroundColor: color.warnSoft }}>
         <Row style={{ gap: space.s }}><Icon name="alert" size={18} c={color.warn} /><T v="h2" style={{ color: color.warn }}>Payment sandbox · no real money</T></Row>
         <T v="small" style={{ color: color.warn }}>A mock of an FPX B2B (corporate internet banking) flow. No bank is contacted, and the bank names are made up.</T>
       </View>
@@ -124,8 +124,8 @@ function Invoice() {
       {step === 'bank' ? <>
         <T v="label">Choose your bank</T><Gap h={space.s} />
         {banks.map(b => (
-          <Pressable key={b} testID={`bank-${banks.indexOf(b)}`} onPress={() => setBank(b)} style={{ borderWidth: bank === b ? 2 : 1, borderColor: bank === b ? color.ink : color.line, borderRadius: radius.m, padding: bank === b ? space.l - 1 : space.l, marginBottom: space.s, backgroundColor: color.surface }}>
-            <Row style={{ gap: space.m }}><Icon name="building" size={18} /><T v="body" style={{ flex: 1, color: color.ink, fontFamily: font.semi }}>{b}</T>{bank === b && <Icon name="check" size={18} />}</Row>
+          <Pressable key={b} testID={`bank-${banks.indexOf(b)}`} onPress={() => setBank(b)} style={{ padding: space.l, marginBottom: space.s, backgroundColor: bank === b ? color.ink : color.surface }}>
+            <Row style={{ gap: space.m }}><Icon name="building" size={18} c={bank === b ? color.onInk : color.ink} /><T v="body" style={{ flex: 1, color: bank === b ? color.onInk : color.ink, fontFamily: font.semi }}>{b}</T>{bank === b && <Icon name="check" size={18} c={color.onInk} />}</Row>
           </Pressable>
         ))}
         <Gap h={space.l} />
@@ -150,13 +150,15 @@ function Invoice() {
       <T v="h1">{inv.period}</T>
       <T v="small">{office.company} · one invoice for every lunch this month</T>
       <Gap h={space.xl} />
-      {inv.status === 'paid' && <><View testID="paid-panel" style={{ backgroundColor: color.accent, borderRadius: radius.m, padding: space.xl }}>
-        <Row style={{ gap: space.s }}><Icon name="check" size={18} c={color.onAccent} w={2.5} /><T v="label" style={{ color: color.onAccentMuted }}>Paid · sandbox</T></Row>
-        <Gap h={space.s} /><T v="hero" style={{ color: color.onAccent }}>{rm(total)} settled.</T>
-        <Gap h={space.s} /><T v="small" style={{ color: color.onAccent, opacity: 0.85 }}>{inv.paidVia}</T><T v="small" style={{ color: color.onAccent, opacity: 0.85, fontFamily: font.mono }}>Ref {inv.paidRef}</T>
+      {inv.status === 'paid' && <><View testID="paid-panel" style={{ backgroundColor: color.surface, borderRadius: radius.m, overflow: 'hidden' }}>
+        <View style={{ backgroundColor: color.ink, paddingHorizontal: space.l, paddingVertical: space.s }}><T v="label" style={{ color: color.onInk }}>Paid · sandbox</T></View>
+        <View style={{ padding: space.xl }}>
+          <T v="num" style={{ fontSize: 36, lineHeight: 40 }}>{rm(total)} settled.</T>
+          <Gap h={space.s} /><T v="small">{inv.paidVia}</T><T v="num" style={{ fontSize: 13 }}>Ref {inv.paidRef}</T>
+        </View>
       </View><Gap h={space.xl} /></>}
       <Card>
-        <Row style={{ justifyContent: 'space-between' }}><T v="small" style={{ fontFamily: font.mono }}>{inv.id}</T><Badge label={inv.status === 'paid' ? 'Paid' : `Due ${inv.dueOn}`} tone={inv.status === 'paid' ? 'accent' : 'warn'} /></Row>
+        <Row style={{ justifyContent: 'space-between' }}><T v="num" style={{ fontSize: 13 }}>{inv.id}</T><Badge label={inv.status === 'paid' ? 'Paid' : `Due ${inv.dueOn}`} tone={inv.status === 'paid' ? 'neutral' : 'warn'} /></Row>
         <Gap h={space.l} />
         {inv.lines.map(l => (
           <View key={l.label} style={{ marginBottom: space.m }}>
@@ -165,7 +167,7 @@ function Invoice() {
           </View>
         ))}
         <Divider /><Gap h={space.m} />
-        <Row style={{ justifyContent: 'space-between' }}><T v="h2">Total</T><T v="num" style={{ fontSize: 18, fontFamily: font.bodyStrong }}>{rm(total)}</T></Row>
+        <Row style={{ justifyContent: 'space-between' }}><T v="h2">Total</T><T v="num" style={{ fontSize: 18 }}>{rm(total)}</T></Row>
         <T v="small" style={{ marginTop: space.xs }}>Issued {inv.issuedOn}. Per-employee average {rm(Math.round(total / 612))} per meal, delivery included.</T>
       </Card>
       <Gap h={space.xl} />

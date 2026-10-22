@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { isOpenStatus, rm, useMarket, vendorNext, vendorNextLabel } from '@makan/core';
-import { Badge, Button, Card, Gap, Screen, space, T } from '@makan/ui';
+import { Button, Gap, nameStyle, Screen, space, T, color } from '@makan/ui';
 import { Account } from '../accounts';
+import { dishPhoto, Thumb } from '../photos';
 import { TabBar } from './TabBar';
 import { OrderBlock } from './OrderBlock';
 
@@ -18,7 +19,7 @@ export default function Vendor({ account }: { account: Account }) {
       <ScrollView style={{ flex: 1 }}>
         {tab === 'menu' ? <Menu restaurantId={restaurant.id} vendorId={account.actorId ?? ''} /> : (
           <Screen>
-            <T v="hero" style={{ fontSize: 36 }}>{restaurant.name}</T>
+            <T style={nameStyle(36)} numberOfLines={2}>{restaurant.name}</T>
             <Gap h={space.s} />
             <T v="body">Only your orders. Accept one, then mark it preparing, then ready for a rider.</T>
             <Gap h={space.xl} />
@@ -27,7 +28,7 @@ export default function Vendor({ account }: { account: Account }) {
               const next = vendorNext(o.status);
               const label = vendorNextLabel(o.status);
               return (
-                <OrderBlock key={o.id} order={o}>
+                <OrderBlock key={o.id} band order={o}>
                   {next && label && <>
                     <Gap h={space.m} />
                     <Button testID={`market-advance-${o.id}`} label={label} onPress={() => dispatch({ t: 'vendor', orderId: o.id, restaurantId: restaurant.id, to: next })} />
@@ -48,25 +49,22 @@ function Menu({ restaurantId, vendorId }: { restaurantId: string; vendorId: stri
   const items = s.items.filter(i => i.restaurantId === restaurantId);
   return (
     <Screen>
-      <T v="hero" style={{ fontSize: 36 }}>Menu</T>
+      <T v="hero">Menu</T>
       <Gap h={space.s} />
       <T v="body">Customers only see dishes you leave available. This switch stays on this device.</T>
       <Gap h={space.xl} />
       {items.map(item => (
-        <View key={item.id} testID={`menu-${item.id}`} style={{ marginBottom: space.m }}>
-          <Card>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.m }}>
-              <View style={{ flex: 1 }}>
-                <T v="h2">{item.name}</T>
-                <T v="small">{item.description}</T>
-                <T v="num" style={{ marginTop: space.s }}>{rm(item.priceSen)}</T>
-              </View>
-              <Badge label={item.available ? 'Available' : 'Hidden'} tone={item.available ? 'accent' : 'neutral'} />
+        <Pressable key={item.id} testID={`menu-${item.id}`} onPress={() => dispatch({ t: 'toggle', itemId: item.id, vendorId })} style={({ pressed }) => ({ minHeight: 56, marginBottom: space.s, paddingVertical: space.m, backgroundColor: pressed ? color.sunk : 'transparent' })}>
+          <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'center' }}>
+            <Thumb source={dishPhoto(item.id)} label={item.name} />
+            <View style={{ flex: 1 }}>
+              <T style={nameStyle(20)}>{item.name}</T>
+              <T v="small">{item.description}</T>
+              <T v="num" style={{ marginTop: space.xs }}>{rm(item.priceSen)}</T>
             </View>
-            <Gap h={space.m} />
-            <Button testID={`market-toggle-${item.id}`} kind="secondary" label={item.available ? 'Hide from customers' : 'Put back on the menu'} onPress={() => dispatch({ t: 'toggle', itemId: item.id, vendorId })} />
-          </Card>
-        </View>
+          </View>
+          <T testID={`market-toggle-${item.id}`} v="small" style={{ color: color.ink, marginTop: space.s }}>{item.available ? 'Hide from customers' : 'Put back on the menu'}</T>
+        </Pressable>
       ))}
     </Screen>
   );

@@ -13,7 +13,7 @@ import Team, { SampleNote } from './Team';
 import { DeleteAccount } from './DeleteAccount';
 
 type P = { account: Account; onSignOut: () => void };
-const LiveDot = () => { const { s } = useStore(); return <View testID="live-dot" style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: s.connected ? color.accent : color.faint }} />; };
+const LiveDot = () => { const { s } = useStore(); return <View testID="live-dot" style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: s.connected ? color.ink : color.faint }} />; };
 const SignOut = ({ onPress, c }: { onPress: () => void; c: string }) => (
   <Pressable testID="sign-out" onPress={onPress} hitSlop={10} accessibilityLabel="Sign out"><T v="small" style={{ color: c, fontFamily: font.semi, textDecorationLine: 'underline' }}>Sign out</T></Pressable>
 );
@@ -23,10 +23,10 @@ export function EmployeeShell({ account, onSignOut }: P) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }} edges={['top']}>
       <StatusBar style="dark" />
-      <Row style={{ justifyContent: 'space-between', paddingHorizontal: space.xl, paddingVertical: space.m, borderBottomWidth: 1, borderBottomColor: color.line }}>
+      <Row style={{ justifyContent: 'space-between', paddingHorizontal: space.xl, paddingTop: space.m, paddingBottom: space.l }}>
         <Wordmark />
         <Row style={{ gap: space.m }}>
-          <Row style={{ gap: space.s }}><LiveDot /><T v="small" style={{ fontFamily: font.mono, color: color.ink2 }} testID="clock">{hhmm(s.clock)}</T></Row>
+          <Row style={{ gap: space.s }}><LiveDot /><T v="num" style={{ fontSize: 13 }} testID="clock">{hhmm(s.clock)}</T></Row>
           <DeleteAccount account={account} onDone={onSignOut} c={color.muted} />
           <SignOut onPress={onSignOut} c={color.muted} />
         </Row>
@@ -50,7 +50,7 @@ export function AdminShell({ account, onSignOut }: P) {
             <Wordmark role="Admin" tone="light" roleFont={font.bodyStrong} />
           </Pressable>
           <Row style={{ gap: space.m }}>
-            <Row style={{ gap: space.s }}><View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: s.connected ? '#7FC29A' : color.faint }} /><T v="small" style={{ color: color.onInk, fontFamily: font.mono }} testID="clock">{hhmm(s.clock)}</T></Row>
+            <Row style={{ gap: space.s }}><View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: s.connected ? color.onInk : color.faint }} /><T v="num" style={{ fontSize: 13, color: color.onInk }} testID="clock">{hhmm(s.clock)}</T></Row>
             <SignOut onPress={onSignOut} c={color.faint} />
           </Row>
         </Row>
@@ -88,9 +88,9 @@ export function KitchenShell({ account, onSignOut }: P) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }} edges={['top', 'bottom']}>
       <StatusBar style="light" />
-      <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: space.xl, paddingVertical: space.m, borderBottomWidth: 1, borderBottomColor: color.line }}>
+      <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: space.xl, paddingTop: space.m, paddingBottom: space.l }}>
         <View>
-          <Wordmark role="Kitchen" tone="dark" roleFont={font.display} />
+          <Wordmark role="Kitchen" tone="dark" roleFont={font.semi} />
           <T v="small" style={{ marginTop: space.xs }}>{tab === 'drops' ? 'Ops · all drops' : c.name}</T>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
@@ -103,11 +103,11 @@ export function KitchenShell({ account, onSignOut }: P) {
         </View>
       </Row>
       <ScrollView style={{ flex: 1 }}>{account.real && <SampleNote account={account} />}<Kitchen tab={tab} cat={cat} setCat={setCat} /></ScrollView>
-      <Row style={{ borderTopWidth: 1, borderTopColor: color.line, backgroundColor: color.surface }}>
+      <Row style={{ backgroundColor: color.surface }}>
         {TABS.map(t => {
           const on = t.key === tab;
           return (
-            <Pressable key={t.key} testID={`cat-tab-${t.key}`} onPress={() => setTab(t.key)} accessibilityRole="tab" accessibilityState={{ selected: on }} style={{ flex: 1, alignItems: 'center', paddingVertical: space.m, gap: space.xs, borderTopWidth: 2, borderTopColor: on ? color.warn : 'transparent' }}>
+            <Pressable key={t.key} testID={`cat-tab-${t.key}`} onPress={() => setTab(t.key)} accessibilityRole="tab" accessibilityState={{ selected: on }} style={{ flex: 1, alignItems: 'center', paddingVertical: space.m, gap: space.xs, borderTopWidth: 3, borderTopColor: on ? color.warn : 'transparent' }}>
               <Icon name={t.icon} size={20} c={on ? color.ink : color.muted} />
               <T v="label" style={{ color: on ? color.ink : color.muted }}>{t.label}</T>
             </Pressable>

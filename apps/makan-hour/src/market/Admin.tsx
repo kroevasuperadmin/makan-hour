@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { isOpenStatus, useMarket } from '@makan/core';
-import { Card, color, font, Gap, radius, Row, Screen, space, T } from '@makan/ui';
+import { color, font, Gap, radius, Row, Screen, space, T } from '@makan/ui';
 import { OrderBlock } from './OrderBlock';
 
 type Filter = 'all' | 'open' | 'delivered';
@@ -55,10 +55,8 @@ export default function MarketAdmin() {
 function Stat({ id, n, label }: { id: string; n: number; label: string }) {
   return (
     <View style={{ flex: 1 }}>
-      <Card>
-        <T testID={id} v="num" style={{ fontSize: 28 }}>{n}</T>
-        <T v="small">{label}</T>
-      </Card>
+      <T testID={id} v="num" style={{ fontSize: 40, lineHeight: 44 }}>{n}</T>
+      <T v="small">{label}</T>
     </View>
   );
 }

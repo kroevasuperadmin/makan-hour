@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, TextInput, View } from 'react-native';
-import { Button, color, font, Gap, radius, space, T } from '@makan/ui';
+import { Button, color, fieldStyle, font, Gap, radius, space, T } from '@makan/ui';
 import { deleteMyAccount, useStore } from '@makan/core';
 import { Account } from './accounts';
 
@@ -32,7 +32,7 @@ export function DeleteAccount({ account, onDone, c }: { account: Account; onDone
             <T v="small">Type DELETE to confirm.</T>
             <Gap h={space.xs} />
             <TextInput testID="delete-confirm-input" value={typed} onChangeText={setTyped} autoCapitalize="characters" autoCorrect={false} placeholder="DELETE" placeholderTextColor={color.faint}
-              style={{ borderWidth: 1.5, borderColor: color.line, borderRadius: radius.s, paddingHorizontal: space.m, minHeight: 48, fontFamily: font.mono, fontSize: 16, color: color.ink, backgroundColor: color.canvas }} />
+              style={[fieldStyle(), { fontFamily: font.bodyStrong, letterSpacing: 2, backgroundColor: color.canvas }]} />
             {!!err && <><Gap h={space.s} /><T v="small" style={{ color: color.danger }} testID="delete-error">{err}</T></>}
             <Gap h={space.xl} />
             <Button testID="confirm-delete" label={busy ? 'Deleting…' : account.real ? 'Delete my account' : 'Reset demo and sign out'} disabled={typed.trim() !== 'DELETE' || busy} onPress={go} />
