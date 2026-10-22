@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { MarketOrder, orderTotalSen, rm, STATUS_LABEL, whenLabel } from '@makan/core';
 import { Badge, Card, Gap, space, T } from '@makan/ui';
 
-const tone = (status: MarketOrder['status']) => status === 'placed' ? 'warn' as const : status === 'cancelled' ? 'danger' as const : status === 'accepted' || status === 'preparing' ? 'info' as const : 'accent' as const;
+const tone = (status: MarketOrder['status']) => status === 'placed' || status === 'awaiting_payment' ? 'warn' as const : status === 'cancelled' ? 'danger' as const : status === 'accepted' || status === 'preparing' ? 'info' as const : 'accent' as const;
 
 export function OrderBlock({ order, restaurant, children }: { order: MarketOrder; restaurant?: string; children?: React.ReactNode }) {
   return (

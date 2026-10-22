@@ -7,7 +7,7 @@ import { OrderBlock } from './OrderBlock';
 type Filter = 'all' | 'open' | 'delivered';
 
 export default function MarketAdmin() {
-  const { s, dispatch } = useMarket();
+  const { s, dispatch, live } = useMarket();
   const [filter, setFilter] = useState<Filter>('all');
   const placed = s.orders.filter(o => o.status === 'placed').length;
   const active = s.orders.filter(o => o.status === 'accepted' || o.status === 'preparing' || o.status === 'ready' || o.status === 'picked_up').length;
@@ -18,7 +18,7 @@ export default function MarketAdmin() {
       <Screen>
         <T v="h1">Every order</T>
         <Gap h={space.s} />
-        <T v="body">Customers, vendors and riders on this device. Office lunch is a separate demo.</T>
+        <T v="body">{live ? 'Every saved marketplace order. Office lunch stays separate.' : 'Customers, vendors and riders on this device. Office lunch is a separate demo.'}</T>
         <Gap h={space.xl} />
         <Row style={{ gap: space.s }}>
           <Stat id="market-count-all" n={s.orders.length} label="Orders" />
@@ -40,11 +40,13 @@ export default function MarketAdmin() {
         <Gap h={space.l} />
         {shown.map(o => <OrderBlock key={o.id} order={o} restaurant={s.restaurants.find(r => r.id === o.restaurantId)?.name} />)}
         {!shown.length && <T v="body">Nothing in this filter.</T>}
-        <Gap h={space.xl} />
-        <Pressable testID="market-reset" onPress={() => dispatch({ t: 'reset' })} hitSlop={8}>
-          <T v="small" style={{ textDecorationLine: 'underline', fontFamily: font.semi, color: color.ink }}>Reset this preview</T>
-        </Pressable>
-        <T v="small">Clears marketplace orders on this device only.</T>
+        {!live && <>
+          <Gap h={space.xl} />
+          <Pressable testID="market-reset" onPress={() => dispatch({ t: 'reset' })} hitSlop={8}>
+            <T v="small" style={{ textDecorationLine: 'underline', fontFamily: font.semi, color: color.ink }}>Reset this preview</T>
+          </Pressable>
+          <T v="small">Clears marketplace orders on this device only.</T>
+        </>}
       </Screen>
     </ScrollView>
   );

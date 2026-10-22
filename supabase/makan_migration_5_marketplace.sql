@@ -1,8 +1,7 @@
--- Makan Hour migration 5: marketplace (customer, vendor, rider, platform admin).
--- NOT APPLIED. Do not run this against the live project from the app preview.
--- The first slice keeps orders in memory and does not query these tables.
--- This file does not alter makan_members, makan_orders, makan_session, or any payment table.
--- No anon or authenticated grants: a client with the anon key cannot read or write these rows.
+-- Makan Hour migration 5: marketplace tables (customer, vendor, rider, platform admin).
+-- Additive only. Does not alter makan_members, makan_orders, makan_session, or any payment table.
+-- Access, seed rows, and payment columns are in makan_migration_6_marketplace_rls.sql.
+-- Apply this file first. No anon or authenticated grants in this file.
 
 create table if not exists public.makan_restaurants (
   id text primary key,
@@ -72,4 +71,4 @@ revoke all on public.makan_market_members from anon, authenticated;
 revoke all on public.makan_consumer_orders from anon, authenticated;
 revoke all on public.makan_consumer_order_lines from anon, authenticated;
 
-comment on table public.makan_restaurants is 'Marketplace restaurants. Not applied in the preview slice. No payment columns.';
+comment on table public.makan_restaurants is 'Marketplace restaurants. Payment columns are added in migration 6.';

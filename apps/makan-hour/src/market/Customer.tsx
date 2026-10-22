@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
-import { cartCount, cartRestaurant, cartTotalSen, Restaurant, rm, useMarket } from '@makan/core';
+import { cartCount, cartRestaurant, cartTotalSen, placeMarketOrder, Restaurant, rm, useMarket } from '@makan/core';
 import { Badge, Button, Card, color, font, Gap, Icon, radius, Row, Screen, space, T } from '@makan/ui';
 import { Account } from '../accounts';
+import PayButton from '../PayButton';
 import { TabBar } from './TabBar';
 import { OrderBlock } from './OrderBlock';
 
 export default function Customer({ account }: { account: Account }) {
-  const { s, dispatch } = useMarket();
+  const { s, dispatch, refresh } = useMarket();
   const [tab, setTab] = useState<'browse' | 'cart' | 'orders'>('browse');
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [address, setAddress] = useState(account.dropAddress ?? '');
   const [note, setNote] = useState('');
   const [swap, setSwap] = useState<string | null>(null);
   const [justId, setJustId] = useState<string | null>(null);
+  const [payErr, setPayErr] = useState<string | null>(null);
   const mine = s.orders.filter(o => o.customerId === account.actorId);
   const current = cartRestaurant(s);
   const count = cartCount(s);
@@ -23,8 +25,20 @@ export default function Customer({ account }: { account: Account }) {
     dispatch({ t: 'add', itemId });
     setSwap(null);
   };
-  const place = () => {
+  const place = async () => {
     if (!account.actorId || address.trim().length < 4 || !current) return;
+    if (account.real) {
+      setPayErr(null);
+      try {
+        const order = await placeMarketOrder({ restaurantId: current.id, address, note, lines: s.cart.map(l => ({ itemId: l.itemId, qty: l.qty })) });
+        dispatch({ t: 'clearCart' });
+        setJustId(order.id);
+        setRestaurantId(null);
+        setTab('orders');
+        await refresh();
+      } catch (e) { setPayErr(e instanceof Error ? e.message : 'Could not start the order'); }
+      return;
+    }
     const id = `mkt-${s.seq}`;
     dispatch({ t: 'place', customerId: account.actorId, customerName: account.name, address, note, at: Date.now() });
     setJustId(id);
@@ -33,8 +47,8 @@ export default function Customer({ account }: { account: Account }) {
   };
 
   const restaurant = s.restaurants.find(r => r.id === restaurantId) ?? null;
-  const body = tab === 'orders' ? <Orders mine={mine} restaurants={s.restaurants} justId={justId} />
-    : tab === 'cart' ? <Cart address={address} setAddress={setAddress} note={note} setNote={setNote} onPlace={place} />
+  const body = tab === 'orders' ? <Orders mine={mine} restaurants={s.restaurants} justId={justId} account={account} />
+    : tab === 'cart' ? <Cart address={address} setAddress={setAddress} note={note} setNote={setNote} onPlace={place} real={!!account.real} payErr={payErr} />
     : restaurant ? <Menu restaurant={restaurant} onBack={() => { setRestaurantId(null); setSwap(null); }} add={add} swap={swap} onReplace={id => { dispatch({ t: 'add', itemId: id, replace: true }); setSwap(null); }} onKeep={() => setSwap(null)} />
     : <Browse onOpen={setRestaurantId} />;
 
@@ -124,7 +138,7 @@ function Menu({ restaurant, onBack, add, swap, onReplace, onKeep }: { restaurant
   );
 }
 
-function Cart({ address, setAddress, note, setNote, onPlace }: { address: string; setAddress: (v: string) => void; note: string; setNote: (v: string) => void; onPlace: () => void }) {
+function Cart({ address, setAddress, note, setNote, onPlace, real, payErr }: { address: string; setAddress: (v: string) => void; note: string; setNote: (v: string) => void; onPlace: () => void; real: boolean; payErr: string | null }) {
   const { s, dispatch } = useMarket();
   const restaurant = cartRestaurant(s);
   const input = { borderWidth: 1, borderColor: color.line, borderRadius: radius.s, padding: space.m, fontFamily: font.body, fontSize: 15, color: color.ink, backgroundColor: color.surface } as const;
@@ -167,23 +181,31 @@ function Cart({ address, setAddress, note, setNote, onPlace }: { address: string
       <Gap h={space.l} />
       <Row style={{ justifyContent: 'space-between' }}><T v="h2">Total</T><T v="num">{rm(cartTotalSen(s))}</T></Row>
       <Gap h={space.l} />
-      <Button testID="market-place-order" label="Place order" onPress={onPlace} disabled={address.trim().length < 4 || blocked} />
+      <Button testID={real ? 'market-continue-pay' : 'market-place-order'} label={real ? 'Continue to payment' : 'Place order'} onPress={onPlace} disabled={address.trim().length < 4 || blocked} />
       <Gap h={space.s} />
-      <T v="small">Placing an order does not charge a card. Stripe checkout is unchanged and is not used here.</T>
+      <T v="small">{real ? 'Next is Stripe Checkout, by FPX or card. The kitchen sees the order only after Stripe confirms. Apple in-app purchase is not used.' : 'This device preview does not charge a card.'}</T>
+      {!!payErr && <T v="small" style={{ color: color.danger, marginTop: space.s }}>{payErr}</T>}
     </Screen>
   );
 }
 
-function Orders({ mine, restaurants, justId }: { mine: { id: string; restaurantId: string }[]; restaurants: Restaurant[]; justId: string | null }) {
-  const { s } = useMarket();
+function Orders({ mine, restaurants, justId, account }: { mine: { id: string; restaurantId: string }[]; restaurants: Restaurant[]; justId: string | null; account: Account }) {
+  const { s, refresh } = useMarket();
   const orders = s.orders.filter(o => mine.some(m => m.id === o.id));
   return (
     <Screen>
       <T v="hero" style={{ fontSize: 36 }}>Your orders</T>
       <Gap h={space.m} />
-      {justId && <View style={{ marginBottom: space.l }}><Card tone="accent"><T testID="market-placed" v="body" style={{ color: color.ink }}>Order {justId} is with the vendor on this device.</T></Card></View>}
+      {justId && <View style={{ marginBottom: space.l }}><Card tone="accent"><T testID="market-placed" v="body" style={{ color: color.ink }}>{account.real ? `Order ${justId} is saved. Pay to send it to the kitchen.` : `Order ${justId} is with the vendor on this device.`}</T></Card></View>}
       {!orders.length && <T v="body">You have not ordered yet.</T>}
-      {orders.map(o => <OrderBlock key={o.id} order={o} restaurant={restaurants.find(r => r.id === o.restaurantId)?.name} />)}
+      {orders.map(o => (
+        <OrderBlock key={o.id} order={o} restaurant={restaurants.find(r => r.id === o.restaurantId)?.name}>
+          {account.real && o.status === 'awaiting_payment' && <>
+            <Gap h={space.m} />
+            <PayButton testID={`market-pay-${o.id}`} kind="order" payRef={o.id} amountSen={o.lines.reduce((n, l) => n + l.priceSen * l.qty, 0)} email={account.email} description={`Makan Hour ${o.id}`} label="Pay with FPX or card" onPaid={() => { refresh(); }} />
+          </>}
+        </OrderBlock>
+      ))}
     </Screen>
   );
 }

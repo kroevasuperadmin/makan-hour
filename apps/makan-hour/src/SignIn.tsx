@@ -3,7 +3,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Button, color, font, Gap, Icon, IconName, radius, Row, space, T } from '@makan/ui';
-import { authAvailable, createOffice, looksLikeEmail, Membership, myMemberships, NotSetUp, Role, signedInEmail, signInPassword, signOutReal, signUpPassword } from '@makan/core';
+import { authAvailable, claimMarket, createOffice, looksLikeEmail, MarketMembership, Membership, myMemberships, NotSetUp, Role, signedInEmail, signInPassword, signOutReal, signUpPassword } from '@makan/core';
 import { Account, ACCOUNTS, accountTestId, corporateFlowOn, DEMO_CODE, MARKET_ACCOUNTS, OFFICE_ACCOUNTS } from './accounts';
 import { Wordmark } from './Wordmark';
 import { appleAvailable, nativeApple, Provider, PROVIDER_NAME, returnUrl, signInWith, stash, webReturnError } from './oauth';
@@ -29,7 +29,6 @@ const MARKET_DOORS: { id: string; title: string; line: string; icon: IconName }[
   { id: 'rider', title: 'I’m a rider', line: 'Pick up a ready order and mark it delivered.', icon: 'truck' },
   { id: 'market-admin', title: 'I’m admin', line: 'Every restaurant and every order.', icon: 'shield' },
 ];
-const marketAccount = (id: string) => (id === 'market-admin' ? MARKET_ACCOUNTS.find(a => a.role === 'admin') : MARKET_ACCOUNTS.find(a => a.role === id))!;
 const roleLabel = (a: Account) => a.surface === 'market'
   ? (a.role === 'customer' ? 'Customer' : a.role === 'vendor' ? 'Vendor' : a.role === 'rider' ? 'Rider' : 'Admin')
   : ROLE_WORD[a.role as Role];
@@ -44,10 +43,18 @@ const toAccount = (m: Membership, email: string): Account => ({
   detail: `${ROLE_WORD[m.role]} · ${m.company}`,
 });
 const NOT_READY = 'Sign-in for real offices isn’t open yet. Until it is, use one of the demo accounts.';
+type MarketDoor = 'customer' | 'vendor' | 'rider' | 'admin';
+const toMarket = (m: MarketMembership, email: string): Account => ({
+  role: m.role, surface: 'market', real: true, email, actorId: m.memberId, restaurantId: m.restaurantId || undefined,
+  name: m.name || email.split('@')[0],
+  org: m.restaurantName || (m.role === 'rider' ? 'Riders' : 'Makan Hour'),
+  detail: `${m.role} · signed in`,
+});
 
 export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => void }) {
   const [role, setRole] = useState<Role | null>(null);
-  const [step, setStep] = useState<'role' | 'options' | 'signup' | 'demo' | 'pick' | 'confirm'>('role');
+  const [step, setStep] = useState<'role' | 'options' | 'signup' | 'demo' | 'pick' | 'confirm' | 'market'>('role');
+  const [door, setDoor] = useState<MarketDoor | null>(null);
   const [demo, setDemo] = useState<Account | null>(null);
   const [pwMode, setPwMode] = useState<'signin' | 'create'>('signin');
   const [email, setEmail] = useState(''), [password, setPassword] = useState('');
@@ -77,6 +84,12 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
     const all = await myMemberships();
     const ms = p ? all.filter(m => m.role === p.role) : all;
     if (ms.length === 0) {
+      if (!p) {
+        try {
+          const market = await claimMarket();
+          if (market[0]) { onSignedIn(toMarket(market[0], who)); return; }
+        } catch (e) { if (!(e instanceof NotSetUp)) throw e; }
+      }
       await signOutReal();
       if (p && all.length > 0) {
         const m = all[0];
@@ -128,6 +141,25 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
     onSignedIn(demo);
   };
   const pickRole = (r: Role) => { setRole(r); setStep('options'); setErr(null); setPwMode('signin'); };
+  const openMarket = (id: string) => { setDoor(id === 'market-admin' ? 'admin' : id as MarketDoor); setEmail(''); setPassword(''); setErr(null); setStep('market'); };
+  const signInMarket = () => {
+    if (!door) return;
+    if (!looksLikeEmail(email)) { setErr('Enter a full email, like name@company.my.'); return; }
+    if (ACCOUNTS.some(a => a.email === email.trim().toLowerCase())) { setErr('That’s a device preview. Tap it in the list on the role screen.'); return; }
+    if (!password) { setErr('Enter your password.'); return; }
+    run(async () => {
+      await signInPassword(email, password);
+      let rows: MarketMembership[] = [];
+      try { rows = await claimMarket(); } catch (e) { await signOutReal(); throw e; }
+      const m = rows.find(r => r.role === door);
+      if (!m) {
+        await signOutReal();
+        const other = rows[0];
+        throw new Error(other ? `That email is a ${other.role}. Go back and choose that side.` : 'That email is not on the marketplace yet.');
+      }
+      onSignedIn(toMarket(m, email.trim().toLowerCase()));
+    });
+  };
   const toRoles = () => { setStep('role'); setRole(null); setErr(null); setPassword(''); };
   const startDemo = (a: Account) => { setDemo(a); setCode(''); setErr(null); setStep('demo'); };
 
@@ -150,7 +182,21 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
         <ScrollView contentContainerStyle={{ paddingHorizontal: space.xl, paddingTop: space.xl, paddingBottom: space.xxxl }} keyboardShouldPersistTaps="handled">
           <Wordmark />
           <Gap h={space.xxxl} />
-          {step === 'pick' ? <>
+          {step === 'market' && door ? <>
+            {backLink('Change role', toRoles, 'market-back')}
+            <T v="h1">{door === 'admin' ? 'Admin' : door[0].toUpperCase() + door.slice(1)} sign-in</T>
+            <Gap h={space.s} />
+            <T v="body">Use the email set up for this side. Payment later is Stripe, by FPX or card.</T>
+            <Gap h={space.xl} />
+            <T v="label">Email</T><Gap h={space.s} />
+            <TextInput testID="market-email" value={email} onChangeText={t => { setEmail(t); setErr(null); }} placeholder="name@company.my" placeholderTextColor={color.faint} autoCapitalize="none" keyboardType="email-address" autoComplete="email" style={input} />
+            <Gap h={space.l} />
+            <T v="label">Password</T><Gap h={space.s} />
+            <TextInput testID="market-password" value={password} onChangeText={t => { setPassword(t); setErr(null); }} secureTextEntry autoCapitalize="none" autoComplete="current-password" style={input} onSubmitEditing={signInMarket} />
+            {errLine}
+            <Gap h={space.m} />
+            <Button testID="market-signin" label={busy ? 'Checking…' : 'Sign in'} onPress={signInMarket} disabled={busy || !email.includes('@') || !password} />
+          </> : step === 'pick' ? <>
             <T v="h1">Which office?</T><Gap h={space.s} />
             <T v="body">{picks.email} is on more than one team.</T><Gap h={space.xl} />
             {picks.ms.map(m => (
@@ -223,10 +269,10 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
           </> : <>
             <T v="hero">Customers order. Vendors cook. Riders deliver.</T>
             <Gap h={space.m} />
-            <T v="body">Pick a side. The preview uses sample kitchens and stays on this device.</T>
+            <T v="body">Sign in with the email for your side. Device previews stay on this phone and are listed below.</T>
             <Gap h={space.xl} />
             {MARKET_DOORS.map(c => (
-              <Pressable key={c.id} testID={`role-${c.id}`} onPress={() => startDemo(marketAccount(c.id))} style={({ pressed }) => ({ borderWidth: 1, borderColor: color.line, borderRadius: radius.m, padding: space.l, marginBottom: space.s, backgroundColor: color.surface, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
+              <Pressable key={c.id} testID={`role-${c.id}`} onPress={() => openMarket(c.id)} style={({ pressed }) => ({ borderWidth: 1, borderColor: color.line, borderRadius: radius.m, padding: space.l, marginBottom: space.s, backgroundColor: color.surface, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
                 <Row style={{ gap: space.m }}>
                   <Icon name={c.icon} size={20} c={color.ink} />
                   <View style={{ flex: 1 }}><T v="h2" style={{ fontSize: 17 }}>{c.title}</T><T v="small">{c.line}</T></View>

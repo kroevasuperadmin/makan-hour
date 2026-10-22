@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Linking, View } from 'react-native';
-import { checkoutStatus, createCheckout, PayNotConfigured, rm } from '@makan/core';
+import { Linking, Platform, View } from 'react-native';
+import { accessToken, checkoutStatus, createCheckout, PayNotConfigured, rm } from '@makan/core';
 import { Button, Card, color, Gap, Row, T, Icon, space } from '@makan/ui';
 
-type Props = { kind: 'invoice' | 'topup'; payRef: string; amountSen: number; email: string; description: string; label: string;
+type Props = { kind: 'invoice' | 'topup' | 'order'; payRef: string; amountSen: number; email: string; description: string; label: string;
   onPaid: (ref: string, method: string | null) => void; onUnavailable?: () => void; kindOfButton?: 'primary' | 'accent' | 'secondary'; testID?: string };
 
 // Opens Stripe Checkout (FPX or card) from our server, then polls until Stripe says it's paid.
@@ -27,8 +27,10 @@ export default function PayButton(p: Props) {
   const start = async () => {
     setBusy(true); setErr(null);
     try {
-      const b = await createCheckout({ kind: p.kind, ref: p.payRef, amountSen: p.amountSen, email: p.email, description: p.description });
-      setBill(b); await Linking.openURL(b.url);
+      const b = await createCheckout({ kind: p.kind, ref: p.payRef, amountSen: p.amountSen, email: p.email, description: p.description, token: p.kind === 'order' ? await accessToken() ?? undefined : undefined });
+      setBill(b);
+      if (p.kind === 'order' && Platform.OS === 'web' && typeof window !== 'undefined') window.open(b.url, '_blank', 'noopener,noreferrer');
+      else await Linking.openURL(b.url);
     } catch (e) {
       if (e instanceof PayNotConfigured) { setOff(true); setOffMsg(/demo/i.test(e.message) ? 'This is a demo account, so payments use the mock flow and nothing is charged.' : null); } else setErr(e instanceof Error ? e.message : 'Payment failed to start');
     } finally { setBusy(false); }

@@ -2,7 +2,7 @@
 // Orders, carts and menu toggles live in memory for the session.
 // supabase/makan_migration_5_marketplace.sql is the matching schema and is not applied here.
 
-export type MarketStatus = 'placed' | 'accepted' | 'preparing' | 'ready' | 'picked_up' | 'delivered' | 'cancelled';
+export type MarketStatus = 'awaiting_payment' | 'placed' | 'accepted' | 'preparing' | 'ready' | 'picked_up' | 'delivered' | 'cancelled';
 
 export interface Restaurant {
   id: string;
@@ -61,6 +61,7 @@ export type MarketAction =
   | { t: 'reset' };
 
 export const STATUS_LABEL: Record<MarketStatus, string> = {
+  awaiting_payment: 'Awaiting payment',
   placed: 'Placed',
   accepted: 'Accepted',
   preparing: 'Preparing',
@@ -147,7 +148,7 @@ export function whenLabel(ms: number) {
   return new Date(ms).toLocaleString('en-MY', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kuala_Lumpur' });
 }
 
-const OPEN: MarketStatus[] = ['placed', 'accepted', 'preparing', 'ready', 'picked_up'];
+const OPEN: MarketStatus[] = ['awaiting_payment', 'placed', 'accepted', 'preparing', 'ready', 'picked_up'];
 export const isOpenStatus = (status: MarketStatus) => OPEN.includes(status);
 
 function mapOrder(s: MarketState, id: string, fn: (o: MarketOrder) => MarketOrder): MarketState {

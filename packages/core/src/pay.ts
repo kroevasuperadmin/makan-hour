@@ -9,8 +9,11 @@ export class PayNotConfigured extends Error {}
 let realPayments = false;
 export const setRealPayments = (on: boolean) => { realPayments = on; };
 
-export async function createCheckout(p: { kind: 'invoice' | 'topup'; ref: string; amountSen: number; email: string; description: string }): Promise<Checkout> {
-  const r = await fetch(`${API}/api/pay/create`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...p, real: realPayments }) });
+export async function createCheckout(p: { kind: 'invoice' | 'topup' | 'order'; ref: string; amountSen: number; email: string; description: string; token?: string }): Promise<Checkout> {
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (p.token) headers.authorization = `Bearer ${p.token}`;
+  const { token: _token, ...body } = p;
+  const r = await fetch(`${API}/api/pay/create`, { method: 'POST', headers, body: JSON.stringify({ ...body, real: realPayments }) });
   const j = await r.json().catch(() => ({}));
   if (r.status === 503 || (r.status === 403 && j.demo)) throw new PayNotConfigured(j.error || 'Payments are not set up on the server');
   if (!r.ok) throw new Error(j.error || `Payment server error ${r.status}`);
