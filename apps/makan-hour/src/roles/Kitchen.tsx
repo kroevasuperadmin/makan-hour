@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { dish, hhmm, officeOrders, useStore } from '@makan/core';
 import { pushDelay } from '../notify';
-import { Badge, Button, Card, color, Divider, font, Gap, Icon, radius, Row, Screen, Segmented, space, T } from '@makan/ui';
+import { Badge, Button, Card, color, Divider, font, Gap, nameStyle, radius, Row, Screen, Segmented, space, T } from '@makan/ui';
 
 function Batch({ catererId, setCaterer }: { catererId: string; setCaterer: (c: string) => void }) {
   const { s, dispatch } = useStore();
@@ -15,10 +15,10 @@ function Batch({ catererId, setCaterer }: { catererId: string; setCaterer: (c: s
       <Gap h={space.xl} />
       <Row style={{ justifyContent: 'space-between' }}>
         <T v="label">{c.name} · Thu 22 Oct</T>
-        {s.batchConfirmed ? <Badge label="Confirmed" tone="accent" /> : s.cutoffPassed ? <Badge label="Final" tone="info" /> : <Badge label="Provisional" tone="warn" />}
+        {s.batchConfirmed ? <Badge label="Confirmed" /> : s.cutoffPassed ? <Badge label="Final" tone="info" /> : <Badge label="Provisional" tone="warn" />}
       </Row>
       <Gap h={space.s} />
-      <Row style={{ alignItems: 'flex-end', gap: space.s }}><T v="hero" testID="batch-total">{mine.length}</T><T v="body" style={{ marginBottom: 6 }}>meals · {s.offices.filter(o => mine.some(m => m.officeId === o.id)).length} offices · pickup 11:30 am</T></Row>
+      <Row style={{ alignItems: 'flex-end', gap: space.s }}><T v="num" testID="batch-total" style={{ fontSize: 56, lineHeight: 60 }}>{mine.length}</T><T v="body" style={{ marginBottom: 6 }}>meals · {s.offices.filter(o => mine.some(m => m.officeId === o.id)).length} offices · pickup 11:30 am</T></Row>
       {!s.cutoffPassed && <T v="small" style={{ color: color.warn, marginTop: space.xs }}>These numbers can still change. The final list locks at 10:30 am.</T>}
       <Gap h={space.xl} />
       <T v="label">Cook list</T><Gap h={space.s} />
@@ -26,7 +26,7 @@ function Batch({ catererId, setCaterer }: { catererId: string; setCaterer: (c: s
         {myDishes.map((d, i) => (
           <View key={d.id}>{i > 0 && <Divider />}
             <Row style={{ paddingVertical: space.m }}>
-              <T v="body" style={{ flex: 1, color: color.ink, fontFamily: font.semi }}>{d.name}</T>
+              <T style={[nameStyle(22), { flex: 1 }]}>{d.name}</T>
               <T v="num" style={{ fontSize: 34, lineHeight: 36 }} testID={`count-${d.id}`}>{mine.filter(o => o.dishId === d.id).length}</T>
             </Row>
           </View>
@@ -41,7 +41,7 @@ function Batch({ catererId, setCaterer }: { catererId: string; setCaterer: (c: s
             <Row style={{ gap: space.m, alignItems: 'flex-start' }}>
               <View style={{ width: 36, height: 36, borderRadius: radius.s, backgroundColor: color.ink, alignItems: 'center', justifyContent: 'center' }}><T v="h2" style={{ color: color.onInk }}>{o.dropCode}</T></View>
               <View style={{ flex: 1 }}>
-                <T v="h2">{o.company}</T>
+                <T style={nameStyle(20)}>{o.company}</T>
                 <T v="small">{o.building} · {o.dropSpot}</T>
                 <Gap h={space.s} />
                 <T v="body" style={{ color: color.ink }}>{myDishes.map(d => [d, oo.filter(x => x.dishId === d.id).length] as const).filter(([, n]) => n).map(([d, n]) => `${n} × ${d.name}`).join('\n')}</T>
@@ -53,7 +53,10 @@ function Batch({ catererId, setCaterer }: { catererId: string; setCaterer: (c: s
       })}
       <Gap h={space.l} />
       {s.batchConfirmed ? (
-        <Card tone="accent"><Row style={{ gap: space.s }}><Icon name="check" size={18} c={color.accent} /><T v="body" style={{ color: color.accent, fontFamily: font.semi }}>Batch confirmed at 10:41 am. Rider arrives 11:30 am.</T></Row></Card>
+        <View style={{ backgroundColor: color.surface, borderRadius: 4, overflow: 'hidden' }}>
+          <View style={{ backgroundColor: color.ink, paddingHorizontal: space.l, paddingVertical: space.s }}><T style={{ color: color.onInk, fontFamily: font.bodyStrong }}>Confirmed</T></View>
+          <View style={{ padding: space.l }}><T v="body">Batch confirmed at 10:41 am. Rider arrives 11:30 am.</T></View>
+        </View>
       ) : (
         <Button testID="confirm-batch" label={s.cutoffPassed ? 'Confirm batch' : 'Confirm opens at 10:30 am'} disabled={!s.cutoffPassed} onPress={() => dispatch({ t: 'confirmBatch' })} />
       )}
@@ -82,7 +85,7 @@ function Labels({ catererId }: { catererId: string }) {
             <View key={o.id} testID={i === 0 ? 'label-first' : undefined} style={{ width: '48.5%', padding: space.m, backgroundColor: PAPER, borderLeftWidth: e.id === 'me' ? 4 : 0, borderLeftColor: color.warn }}>
               <Row style={{ justifyContent: 'space-between' }}><T v="small" style={{ color: INK, fontFamily: font.bodyStrong }}>Drop {off.dropCode}</T><T v="num" style={{ color: INK, fontSize: 13 }}>{i + 1}</T></Row>
               <Gap h={space.s} />
-              <T v="h2" numberOfLines={1} style={{ color: INK }}>{e.name}</T>
+              <T numberOfLines={1} style={[nameStyle(18), { color: INK }]}>{e.name}</T>
               <T v="small" numberOfLines={1} style={{ color: '#4A4741' }}>{e.floor} · {e.desk}</T>
               <Gap h={space.s} />
               <T v="small" style={{ color: INK, fontFamily: font.semi }} numberOfLines={1}>{dish(s, o.dishId).name}</T>
@@ -107,19 +110,22 @@ function Drops() {
         const o = s.offices.find(x => x.id === d.officeId)!; const n = officeOrders(s, o.id).length;
         const eta = d.dueAt + d.delayMin * 60;
         return (
-          <Card key={o.id} style={{ marginBottom: space.l }}>
+          <View key={o.id} style={{ marginBottom: space.m, backgroundColor: color.surface, borderRadius: 4, overflow: 'hidden' }}>
+            <View style={{ backgroundColor: d.stage === 4 ? color.ink : d.delayMin > 0 && d.stage < 4 ? color.warn : color.ink2, paddingHorizontal: space.l, paddingVertical: space.s }}>
+              <T testID={`stage-${o.id}`} style={{ color: d.stage === 4 ? color.onInk : d.delayMin > 0 && d.stage < 4 ? color.warnSoft : color.onInk, fontFamily: font.bodyStrong, fontSize: 16, lineHeight: 20 }}>{STAGES[d.stage]}</T>
+            </View>
+            <View style={{ padding: space.l, minHeight: 56 }}>
             <Row style={{ gap: space.m }}>
               <View style={{ width: 36, height: 36, borderRadius: radius.s, backgroundColor: color.ink, alignItems: 'center', justifyContent: 'center' }}><T v="h2" style={{ color: color.onInk }}>{o.dropCode}</T></View>
-              <View style={{ flex: 1 }}><T v="h2" numberOfLines={1}>{o.company}</T><T v="small">{n} meals · {d.rider}</T></View>
-              <View style={{ alignItems: 'flex-end' }}><T v="label">{d.stage === 4 ? 'Arrived' : 'ETA'}</T><T v="num" style={{ fontFamily: font.bodyStrong, color: d.delayMin && d.stage < 4 ? color.warn : color.ink }}>{hhmm(d.stage === 4 ? d.deliveredAt! : eta)}</T></View>
+              <View style={{ flex: 1 }}><T style={nameStyle(20)} numberOfLines={1}>{o.company}</T><T v="small">{n} meals · {d.rider}</T></View>
+              <View style={{ alignItems: 'flex-end' }}><T v="label">{d.stage === 4 ? 'Arrived' : 'ETA'}</T><T v="num" style={{ color: d.delayMin && d.stage < 4 ? color.warn : color.ink }}>{hhmm(d.stage === 4 ? d.deliveredAt! : eta)}</T></View>
             </Row>
             <Gap h={space.l} />
-            <Row style={{ gap: 3 }}>{[1, 2, 3, 4].map(k => <View key={k} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: d.stage >= k ? (k === 4 ? color.accent : color.ink) : color.sunk }} />)}</Row>
+            <Row style={{ gap: 3 }}>{[1, 2, 3, 4].map(k => <View key={k} style={{ flex: 1, height: 4, backgroundColor: d.stage >= k ? color.ink : color.sunk }} />)}</Row>
             <Gap h={space.s} />
             <Row style={{ justifyContent: 'space-between' }}>
-              <T v="small" style={{ color: color.ink, fontFamily: font.bodyStrong }} testID={`stage-${o.id}`}>{STAGES[d.stage]}</T>
               {d.delayMin > 0 && d.stage < 4 && <Badge label={`+${d.delayMin} min · staff alerted`} tone="warn" />}
-              {d.stage === 4 && <Badge label="Photo + count signed" tone="accent" />}
+              {d.stage === 4 && <Badge label="Photo + count signed" />}
             </Row>
             {d.delayMin > 0 && d.stage < 4 && <T v="small" style={{ color: color.warn, marginTop: space.xs }}>Alert sent {hhmm(d.delayNotifiedAt!)} to {n} people and the office admin, {Math.round((d.dueAt - d.delayNotifiedAt!) / 60)} min before due.</T>}
             {d.stage >= 1 && d.stage < 4 && <>
@@ -130,7 +136,8 @@ function Drops() {
               </Row>
             </>}
             {d.stage === 0 && <T v="small" style={{ marginTop: space.m }}>Starts when the caterer confirms the batch.</T>}
-          </Card>
+            </View>
+          </View>
         );
       })}
     </>

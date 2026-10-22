@@ -1,4 +1,3 @@
-import { Platform } from 'react-native';
 // Printed lunch list. One paper, one ink, one green. Five type steps. One radius.
 export const space = { xs: 4, s: 8, m: 12, l: 16, xl: 24, xxl: 32, xxxl: 48 } as const;
 export const radius = { s: 4, m: 4 } as const;
@@ -25,11 +24,12 @@ export const kitchenPalette: Palette = {
   warn: '#E5A93E', warnSoft: '#2D2310', danger: '#E58276', dangerSoft: '#2E1916', info: '#93BAD8', infoSoft: '#16212B',
 };
 
-const textFace = Platform.select({ default: 'Manrope_700Bold' }) as string;
 export type Fonts = { display: string; body: string; bodyStrong: string; semi: string; mono: string; displayTracking: number };
-export const employeeFonts: Fonts = { display: 'InstrumentSerif_400Regular', body: 'Manrope_500Medium', bodyStrong: 'Manrope_700Bold', semi: 'Manrope_600SemiBold', mono: textFace, displayTracking: -1.2 };
-export const adminFonts: Fonts = { display: 'IBMPlexSans_600SemiBold', body: 'IBMPlexSans_400Regular', bodyStrong: 'IBMPlexSans_600SemiBold', semi: 'IBMPlexSans_500Medium', mono: 'IBMPlexSans_600SemiBold', displayTracking: -0.8 };
-export const kitchenFonts: Fonts = { display: 'BarlowCondensed_600SemiBold', body: 'Manrope_500Medium', bodyStrong: 'Manrope_700Bold', semi: 'Manrope_600SemiBold', mono: 'BarlowCondensed_600SemiBold', displayTracking: 0 };
+// Two families. Serif is for names. Manrope carries reading, headlines, and every figure.
+const faces: Fonts = { display: 'InstrumentSerif_400Regular', body: 'Manrope_500Medium', bodyStrong: 'Manrope_700Bold', semi: 'Manrope_600SemiBold', mono: 'Manrope_700Bold', displayTracking: -0.4 };
+export const employeeFonts: Fonts = faces;
+export const adminFonts: Fonts = faces;
+export const kitchenFonts: Fonts = faces;
 
 // Mutable singletons so the shared kit picks up each app's identity. Call applyTheme() once, before first render.
 export const color: Palette = { ...employeePalette };
@@ -37,8 +37,8 @@ export const font: Fonts = { ...employeeFonts };
 export const type = {} as Record<'hero' | 'h1' | 'h2' | 'body' | 'small' | 'label' | 'num', any>;
 function buildType(heroSize: number) {
   Object.assign(type, {
-    hero: { fontFamily: font.display, fontSize: heroSize, lineHeight: Math.round(heroSize * 0.98), letterSpacing: font.displayTracking, color: color.ink },
-    h1: { fontFamily: font.display, fontSize: Math.round(heroSize * 0.72), lineHeight: Math.round(heroSize * 0.78), letterSpacing: font.displayTracking * 0.7, color: color.ink },
+    hero: { fontFamily: font.bodyStrong, fontSize: heroSize, lineHeight: Math.round(heroSize * 1.05), letterSpacing: -0.8, color: color.ink },
+    h1: { fontFamily: font.bodyStrong, fontSize: Math.round(heroSize * 0.64), lineHeight: Math.round(heroSize * 0.78), letterSpacing: -0.6, color: color.ink },
     h2: { fontFamily: font.bodyStrong, fontSize: 18, lineHeight: 24, color: color.ink },
     body: { fontFamily: font.body, fontSize: 16, lineHeight: 24, color: color.ink },
     small: { fontFamily: font.body, fontSize: 13, lineHeight: 18, color: color.muted },

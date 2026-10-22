@@ -55,7 +55,7 @@ export default function MarketAdmin() {
 function Stat({ id, n, label }: { id: string; n: number; label: string }) {
   return (
     <View style={{ flex: 1 }}>
-      <T testID={id} v="num" style={{ fontFamily: font.display, fontSize: 40, lineHeight: 42 }}>{n}</T>
+      <T testID={id} v="num" style={{ fontSize: 40, lineHeight: 44 }}>{n}</T>
       <T v="small">{label}</T>
     </View>
   );

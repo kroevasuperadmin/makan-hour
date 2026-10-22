@@ -13,7 +13,7 @@ import Team, { SampleNote } from './Team';
 import { DeleteAccount } from './DeleteAccount';
 
 type P = { account: Account; onSignOut: () => void };
-const LiveDot = () => { const { s } = useStore(); return <View testID="live-dot" style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: s.connected ? color.accent : color.faint }} />; };
+const LiveDot = () => { const { s } = useStore(); return <View testID="live-dot" style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: s.connected ? color.ink : color.faint }} />; };
 const SignOut = ({ onPress, c }: { onPress: () => void; c: string }) => (
   <Pressable testID="sign-out" onPress={onPress} hitSlop={10} accessibilityLabel="Sign out"><T v="small" style={{ color: c, fontFamily: font.semi, textDecorationLine: 'underline' }}>Sign out</T></Pressable>
 );
@@ -50,7 +50,7 @@ export function AdminShell({ account, onSignOut }: P) {
             <Wordmark role="Admin" tone="light" roleFont={font.bodyStrong} />
           </Pressable>
           <Row style={{ gap: space.m }}>
-            <Row style={{ gap: space.s }}><View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: s.connected ? '#7FC29A' : color.faint }} /><T v="num" style={{ fontSize: 13, color: color.onInk }} testID="clock">{hhmm(s.clock)}</T></Row>
+            <Row style={{ gap: space.s }}><View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: s.connected ? color.onInk : color.faint }} /><T v="num" style={{ fontSize: 13, color: color.onInk }} testID="clock">{hhmm(s.clock)}</T></Row>
             <SignOut onPress={onSignOut} c={color.faint} />
           </Row>
         </Row>
@@ -90,7 +90,7 @@ export function KitchenShell({ account, onSignOut }: P) {
       <StatusBar style="light" />
       <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: space.xl, paddingTop: space.m, paddingBottom: space.l }}>
         <View>
-          <Wordmark role="Kitchen" tone="dark" roleFont={font.display} />
+          <Wordmark role="Kitchen" tone="dark" roleFont={font.semi} />
           <T v="small" style={{ marginTop: space.xs }}>{tab === 'drops' ? 'Ops · all drops' : c.name}</T>
         </View>
         <View style={{ alignItems: 'flex-end' }}>

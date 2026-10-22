@@ -56,7 +56,7 @@ export default function Team({ account }: { account: Account }) {
         <Segmented testPrefix="invite-role" value={role} onChange={setRole} items={ROLES} />
         <Gap h={space.m} />
         <Button testID="invite-send" label={busy ? 'Adding…' : `Add as ${word(role).toLowerCase()}`} onPress={invite} disabled={busy || !email.includes('@')} />
-        {msg && <T v="small" style={{ marginTop: space.s, color: msg.ok ? color.accent : color.danger }}>{msg.t}</T>}
+        {msg && <T v="small" style={{ marginTop: space.s, color: msg.ok ? color.ink : color.danger }}>{msg.t}</T>}
       </Card>
       <Gap h={space.l} />
       <Card>
@@ -80,7 +80,7 @@ export default function Team({ account }: { account: Account }) {
                   <T v="body" style={{ color: color.ink, fontFamily: font.semi }} numberOfLines={1}>{m.name || m.email}</T>
                   <T v="small" numberOfLines={1}>{m.name ? `${m.email} · ` : ''}{m.userId ? 'Signed in' : 'Not signed in yet'}</T>
                 </View>
-                {self ? <Badge label="You · admin" tone="accent" /> : <>
+                {self ? <Badge label="You · admin" /> : <>
                   <Pressable accessibilityRole="button" accessibilityLabel={`Change role for ${m.email}`} disabled={busy}
                     onPress={() => { const next = ROLES[(ROLES.findIndex(r => r.key === m.role) + 1) % ROLES.length].key; act(() => setMemberRole(m.id, next), `${m.email} is now ${word(next).toLowerCase()}.`); }}
                     style={{ backgroundColor: color.sunk, borderRadius: 4, paddingHorizontal: space.m, minHeight: 44, justifyContent: 'center' }}>

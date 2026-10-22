@@ -13,20 +13,27 @@ export const Card = ({ children, style, tone }: { children: React.ReactNode; sty
 
 const pressWeb = (Platform.OS === 'web' ? { transitionProperty: 'transform', transitionDuration: '120ms', transitionTimingFunction: 'cubic-bezier(0.23, 1, 0.32, 1)' } : {}) as ViewStyle;
 
-export function Button({ label, onPress, kind = 'primary', icon, disabled, testID, style }: { label: string; onPress: () => void; kind?: 'primary' | 'secondary' | 'ghost' | 'accent'; icon?: IconName; disabled?: boolean; testID?: string; style?: ViewStyle }) {
-  const bg = kind === 'primary' ? color.ink : kind === 'accent' ? color.accent : kind === 'secondary' ? color.sunk : 'transparent';
-  const fg = kind === 'primary' ? color.onInk : kind === 'accent' ? color.onAccent : color.ink;
+// Green is the press colour. Primary and accent are the same green. Finished states stay ink.
+export function Button({ label, onPress, kind = 'primary', icon, disabled, testID, style, size = 'md' }: { label: string; onPress: () => void; kind?: 'primary' | 'secondary' | 'ghost' | 'accent'; icon?: IconName; disabled?: boolean; testID?: string; style?: ViewStyle; size?: 'md' | 'lg' }) {
+  const press = kind === 'primary' || kind === 'accent';
+  const bg = press ? color.accent : kind === 'secondary' ? color.sunk : 'transparent';
+  const fg = press ? color.onAccent : color.ink;
+  const big = size === 'lg';
   return (
     <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={label} disabled={disabled} onPress={onPress} pressRetentionOffset={12}
-      style={({ pressed }) => [st.btn, pressWeb, { backgroundColor: bg, opacity: disabled ? 0.4 : 1, transform: [{ scale: pressed && !disabled ? 0.97 : 1 }] }, style]}>
-      {icon && <Icon name={icon} size={18} c={fg} />}
-      <Text style={{ fontFamily: font.bodyStrong, fontSize: 16, lineHeight: 20, color: fg }}>{label}</Text>
+      style={({ pressed }) => [st.btn, pressWeb, { backgroundColor: bg, minHeight: big ? 64 : 48, opacity: disabled ? 0.4 : 1, transform: [{ scale: pressed && !disabled ? 0.97 : 1 }] }, style]}>
+      {icon && <Icon name={icon} size={big ? 22 : 18} c={fg} />}
+      <Text style={{ fontFamily: font.bodyStrong, fontSize: big ? 20 : 16, lineHeight: big ? 24 : 20, color: fg }}>{label}</Text>
     </Pressable>
   );
 }
 
+export function nameStyle(size = 22): TextStyle {
+  return { fontFamily: font.display, fontSize: size, lineHeight: Math.round(size * 1.15), letterSpacing: -0.4, color: color.ink };
+}
+
 export const Badge = ({ label, tone = 'neutral' }: { label: string; tone?: 'neutral' | 'accent' | 'warn' | 'danger' | 'info' }) => {
-  const m = { neutral: [color.sunk, color.ink], accent: [color.accentSoft, color.accent], warn: [color.warnSoft, color.warn], danger: [color.dangerSoft, color.danger], info: [color.infoSoft, color.info] }[tone];
+  const m = { neutral: [color.sunk, color.ink], accent: [color.ink, color.onInk], warn: [color.warnSoft, color.warn], danger: [color.dangerSoft, color.danger], info: [color.infoSoft, color.info] }[tone];
   return <View style={[st.badge, { backgroundColor: m[0] }]}><Text style={{ fontFamily: font.bodyStrong, fontSize: 13, lineHeight: 16, color: m[1] }}>{label}</Text></View>;
 };
 

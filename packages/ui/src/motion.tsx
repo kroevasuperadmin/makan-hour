@@ -41,7 +41,7 @@ export function StatusRail({ status }: { status: string }) {
   return (
     <View style={{ marginTop: space.m }}>
       <View style={{ height: 4, backgroundColor: color.sunk, overflow: 'hidden' }}>
-        <Animated.View style={{ height: 4, width: '100%', backgroundColor: color.accent, transformOrigin: 'left center', transform: [{ scaleX: scale }] }} />
+        <Animated.View style={{ height: 4, width: '100%', backgroundColor: color.ink, transformOrigin: 'left center', transform: [{ scaleX: scale }] }} />
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: space.s }}>
         <T v="small">Kitchen</T>

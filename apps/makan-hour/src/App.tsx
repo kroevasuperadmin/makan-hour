@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import { adminFonts, adminPalette, applyTheme, color, employeeFonts, employeePalette, kitchenFonts, kitchenPalette, riderPalette } from '@makan/ui';
+import { adminFonts, adminPalette, applyTheme, color, employeeFonts, employeePalette, kitchenFonts, kitchenPalette } from '@makan/ui';
 import { MarketProvider, setRealPayments, signOutReal, StoreProvider } from '@makan/core';
 import SignIn from './SignIn';
 import { AdminShell, EmployeeShell, KitchenShell } from './Shells';
@@ -18,7 +18,7 @@ const THEMES = {
   admin: { p: adminPalette, f: adminFonts, hero: 40, frame: '#D9DCD6', max: 1100 },
   caterer: { p: kitchenPalette, f: kitchenFonts, hero: 56, frame: '#0C0B0A', max: 820 },
   vendor: { p: kitchenPalette, f: kitchenFonts, hero: 48, frame: '#0C0B0A', max: 820 },
-  rider: { p: riderPalette, f: employeeFonts, hero: 44, frame: '#E4DDD0', max: 440 },
+  rider: { p: kitchenPalette, f: employeeFonts, hero: 40, frame: '#0C0B0A', max: 440 },
 } as const;
 type ThemeKey = keyof typeof THEMES;
 
@@ -74,10 +74,6 @@ export default function App() {
     Manrope_500Medium: require('../assets/fonts/Manrope_500Medium.ttf'),
     Manrope_600SemiBold: require('../assets/fonts/Manrope_600SemiBold.ttf'),
     Manrope_700Bold: require('../assets/fonts/Manrope_700Bold.ttf'),
-    IBMPlexSans_400Regular: require('../assets/fonts/IBMPlexSans_400Regular.ttf'),
-    IBMPlexSans_500Medium: require('../assets/fonts/IBMPlexSans_500Medium.ttf'),
-    IBMPlexSans_600SemiBold: require('../assets/fonts/IBMPlexSans_600SemiBold.ttf'),
-    BarlowCondensed_600SemiBold: require('../assets/fonts/BarlowCondensed_600SemiBold.ttf'),
   });
   const [account, setAccount] = useState<Account | null>(null);
   const key = themeKey(account);

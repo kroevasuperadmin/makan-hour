@@ -3,7 +3,8 @@ import { Pressable, TextInput, View } from 'react-native';
 import { ALLOWANCE_SEN, CUTOFF, dish, hhmm, me, myOrder, rm, topUpSen, useStore } from '@makan/core';
 import PayButton from '../PayButton';
 import { askPermission, useAlertOnChange, useRegisterPush } from '../notify';
-import { Badge, Button, Card, color, Divider, fieldStyle, font, Gap, Icon, radius, Row, Screen, space, T } from '@makan/ui';
+import { Badge, Button, Card, color, Divider, fieldStyle, font, Gap, Icon, nameStyle, radius, Row, Screen, space, T } from '@makan/ui';
+import { OrderMark } from '../market/OrderMark';
 
 function Countdown() {
   const { s } = useStore();
@@ -46,7 +47,7 @@ function SpotCard() {
         <Pressable testID="edit-spot" onPress={() => setEdit(true)} hitSlop={12}><T v="small" style={{ color: color.ink, fontFamily: font.bodyStrong, textDecorationLine: 'underline' }}>Change</T></Pressable>
       </Row>
       <Gap h={space.s} />
-      <Row style={{ gap: space.xs }}><Icon name="check" size={14} c={color.accent} /><T v="small" style={{ color: color.accent }}>Saved to your profile for every order.</T></Row>
+      <Row style={{ gap: space.xs }}><Icon name="check" size={14} c={color.ink} /><T v="small" style={{ color: color.ink }}>Saved to your profile for every order.</T></Row>
     </Card>
   );
 }
@@ -58,39 +59,44 @@ function ConfirmedPanel() {
   const drop = s.drops.find(x => x.officeId === u.officeId)!;
   const eta = drop.dueAt + drop.delayMin * 60;
   if (drop.stage === 4) return (
-    <View testID="delivered-panel" style={{ backgroundColor: color.accent, borderRadius: radius.m, padding: space.xl }}>
-      <Row style={{ gap: space.s }}><Icon name="check" size={18} c={color.onAccent} w={2.5} /><T v="label" style={{ color: color.onAccentMuted }}>Delivered {hhmm(drop.deliveredAt!)}</T></Row>
-      <Gap h={space.m} />
-      <T v="hero" numberOfLines={2} style={{ color: color.onAccent, fontSize: 34, lineHeight: 36 }}>Lunch is at {s.offices.find(x => x.id === u.officeId)!.dropSpot}.</T>
-      <Gap h={space.m} />
-      <T v="body" style={{ color: color.onAccent, opacity: 0.85 }}>Look for the bag labelled “{u.name} · {d.name}”. Shelf {s.offices.find(x => x.id === u.officeId)!.dropCode}, slot 12.</T>
+    <View testID="delivered-panel" style={{ backgroundColor: color.surface, borderRadius: radius.m, overflow: 'hidden' }}>
+      <View style={{ backgroundColor: color.ink, paddingHorizontal: space.l, paddingVertical: space.s }}><T v="label" style={{ color: color.onInk }}>Delivered {hhmm(drop.deliveredAt!)}</T></View>
+      <View style={{ padding: space.xl }}>
+        <OrderMark />
+        <Gap h={space.m} />
+        <T v="h1" numberOfLines={2}>Lunch is at {s.offices.find(x => x.id === u.officeId)!.dropSpot}.</T>
+        <Gap h={space.m} />
+        <T v="body">Look for the bag labelled “{u.name} · {d.name}”. Shelf {s.offices.find(x => x.id === u.officeId)!.dropCode}, slot 12.</T>
+      </View>
     </View>
   );
   return (
-    <View testID="ordered-panel" style={{ backgroundColor: color.accent, borderRadius: radius.m, padding: space.xl }}>
-      <Row style={{ gap: space.s }}>
-        <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: color.onAccent, alignItems: 'center', justifyContent: 'center' }}><Icon name="check" size={18} c={color.accent} w={3} /></View>
-        <T v="label" style={{ color: color.onAccentMuted }}>Ordered · {s.cutoffPassed ? 'locked' : 'confirmed'}</T>
-      </Row>
-      <Gap h={space.l} />
-      <T v="hero" numberOfLines={2} style={{ color: color.onAccent, fontSize: 36, lineHeight: 38 }}>You're in for lunch.</T>
+    <View testID="ordered-panel" style={{ backgroundColor: color.surface, borderRadius: radius.m, overflow: 'hidden' }}>
+      <View style={{ backgroundColor: color.ink, paddingHorizontal: space.l, paddingVertical: space.s }}>
+        <T v="label" style={{ color: color.onInk }}>Ordered · {s.cutoffPassed ? 'locked' : 'confirmed'}</T>
+      </View>
+      <View style={{ padding: space.xl }}>
+      <OrderMark />
       <Gap h={space.m} />
-      <T v="body" style={{ color: color.onAccent, fontFamily: font.bodyStrong }}>{d.name}</T>
-      <T v="body" style={{ color: color.onAccent, opacity: 0.85 }}>To {u.floor}, {u.desk} · arrives {hhmm(eta)}{drop.delayMin ? ' (revised)' : ''}</T>
-      <T v="small" style={{ color: color.onAccentMuted, marginTop: space.xs }}>Order MH-{String(o.placedAt).slice(-4)} · {topUpSen(d.priceSen) ? `${s.offices.find(x => x.id === u.officeId)!.company} pays ${rm(ALLOWANCE_SEN)}, you pay ${rm(topUpSen(d.priceSen))}` : `paid by ${s.offices.find(x => x.id === u.officeId)!.company}`}</T>
+      <T v="h1" numberOfLines={2}>You're in for lunch.</T>
+      <Gap h={space.m} />
+      <T style={nameStyle(22)}>{d.name}</T>
+      <T v="body">To {u.floor}, {u.desk} · arrives {hhmm(eta)}{drop.delayMin ? ' (revised)' : ''}</T>
+      <T v="small" style={{ marginTop: space.xs }}>Order MH-{String(o.placedAt).slice(-4)} · {topUpSen(d.priceSen) ? `${s.offices.find(x => x.id === u.officeId)!.company} pays ${rm(ALLOWANCE_SEN)}, you pay ${rm(topUpSen(d.priceSen))}` : `paid by ${s.offices.find(x => x.id === u.officeId)!.company}`}</T>
       {topUpSen(d.priceSen) > 0 && <>
         <Gap h={space.m} />
-        {s.topUpPaidRef ? <T v="small" testID="topup-paid" style={{ color: color.onAccent, fontFamily: font.bodyStrong }}>Top-up {rm(topUpSen(d.priceSen))} paid · ref {s.topUpPaidRef}</T>
+        {s.topUpPaidRef ? <T v="small" testID="topup-paid" style={{ color: color.ink, fontFamily: font.bodyStrong }}>Top-up {rm(topUpSen(d.priceSen))} paid · ref {s.topUpPaidRef}</T>
           : <PayButton testID="pay-topup" kind="topup" kindOfButton="secondary" payRef={`ord-me-${o.placedAt}`} amountSen={topUpSen(d.priceSen)} email="aina.rahman@example.com"
               description={`Top-up for ${d.name}`} label={`Pay ${rm(topUpSen(d.priceSen))} top-up`} onPaid={ref => dispatch({ t: 'topupPaid', ref })} />}
       </>}
       {!s.cutoffPassed && <>
         <Gap h={space.l} />
         <Row style={{ gap: space.s }}>
-          <Pressable testID="cancel-order" onPress={() => dispatch({ t: 'cancel' })} style={{ paddingVertical: space.s }}><T v="small" style={{ color: color.onAccent, textDecorationLine: 'underline', fontFamily: font.bodyStrong }}>Change or cancel</T></Pressable>
-          <T v="small" style={{ color: color.onAccentMuted }}>until 10:30 am</T>
+          <Pressable testID="cancel-order" onPress={() => dispatch({ t: 'cancel' })} style={{ paddingVertical: space.s }}><T v="small" style={{ color: color.ink, textDecorationLine: 'underline', fontFamily: font.bodyStrong }}>Change or cancel</T></Pressable>
+          <T v="small">until 10:30 am</T>
         </Row>
       </>}
+      </View>
     </View>
   );
 }
@@ -144,21 +150,21 @@ export default function Employee() {
           const c = s.caterers.find(x => x.id === d.catererId)!; const on = sel === d.id;
           const extra = topUpSen(d.priceSen); const blocked = extra > 0 && !s.topUpsAllowed;
           if (blocked) return (
-            <View key={d.id} testID={`dish-${d.id}-blocked`} style={{ backgroundColor: color.sunk, padding: space.l, marginBottom: space.s, opacity: 0.7 }}>
+            <View key={d.id} testID={`dish-${d.id}-blocked`} style={{ minHeight: 56, backgroundColor: color.sunk, padding: space.l, marginBottom: space.s, opacity: 0.7 }}>
               <Row style={{ justifyContent: 'space-between' }}><T v="h2">{d.name}</T><T v="num">{rm(d.priceSen)}</T></Row>
               <T v="small" style={{ marginTop: 2 }}>Over your {rm(ALLOWANCE_SEN)} allowance. Your office has top-ups switched off.</T>
             </View>
           );
           return (
             <Pressable key={d.id} testID={`dish-${d.id}`} onPress={() => setSel(d.id)} accessibilityRole="radio" accessibilityState={{ checked: on }}
-              style={{ padding: space.l, backgroundColor: on ? color.accentSoft : color.surface, marginBottom: space.s, borderLeftWidth: on ? 4 : 0, borderLeftColor: color.accent }}>
+              style={{ minHeight: 56, padding: space.l, backgroundColor: on ? color.sunk : color.surface, marginBottom: space.s, borderLeftWidth: on ? 4 : 0, borderLeftColor: color.ink }}>
               <Row style={{ alignItems: 'flex-start', gap: space.m }}>
                 <View style={{ flex: 1 }}>
-                  <T v="h2">{d.name}</T>
+                  <T style={nameStyle(20)}>{d.name}</T>
                   <T v="small" style={{ marginTop: 2 }}>{d.description}</T>
                   <Row style={{ gap: space.s, marginTop: space.s, flexWrap: 'wrap' }}>
                     <T v="small" style={{ color: color.ink2 }}>{c.name}</T>
-                    {c.halalCertOnFile ? <Badge label="Halal cert on file" tone="accent" /> : null}
+                    {c.halalCertOnFile ? <Badge label="Halal cert on file" /> : null}
                     {d.tags.map(t => <Badge key={t} label={t} />)}
                     {extra > 0 && <Badge label={`You add ${rm(extra)}`} tone="warn" />}
                   </Row>

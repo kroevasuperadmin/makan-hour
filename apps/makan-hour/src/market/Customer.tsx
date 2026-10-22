@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { cartCount, cartRestaurant, cartTotalSen, placeMarketOrder, Restaurant, rm, useMarket } from '@makan/core';
-import { Button, Card, color, fieldStyle, font, Gap, Row, Screen, space, T } from '@makan/ui';
+import { Button, Card, color, fieldStyle, font, Gap, nameStyle, Row, Screen, space, T } from '@makan/ui';
 import { Account } from '../accounts';
+import { dishPhoto, restaurantPhoto, Thumb } from '../photos';
 import PayButton from '../PayButton';
 import { TabBar } from './TabBar';
 import { OrderBlock } from './OrderBlock';
@@ -81,16 +82,17 @@ function Browse({ onOpen }: { onOpen: (id: string) => void }) {
       <Gap h={space.s} />
       <T v="body">Kitchens around Bangsar South and Brickfields. One restaurant in the cart.</T>
       <Gap h={space.xl} />
-      {s.restaurants.map((r, i) => (
-        <Pressable key={r.id} testID={`restaurant-${r.id}`} onPress={() => onOpen(r.id)} style={({ pressed }) => ({ marginHorizontal: -space.xl, paddingHorizontal: space.xl, paddingVertical: space.l, backgroundColor: pressed ? color.sunk : i % 2 ? color.sunk : color.surface, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-          <Row style={{ justifyContent: 'space-between', alignItems: 'flex-end', gap: space.m }}>
+      {s.restaurants.map(r => (
+        <Pressable key={r.id} testID={`restaurant-${r.id}`} onPress={() => onOpen(r.id)} style={({ pressed }) => ({ minHeight: 56, marginHorizontal: -space.xl, paddingHorizontal: space.xl, paddingVertical: space.m, backgroundColor: pressed ? color.sunk : 'transparent', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+          <Row style={{ gap: space.m, alignItems: 'center' }}>
+            <Thumb source={restaurantPhoto(r.id)} label={r.name} />
             <View style={{ flex: 1 }}>
-              <T style={{ fontFamily: font.display, fontSize: 32, lineHeight: 34, letterSpacing: -0.8, color: color.ink }} numberOfLines={2}>{r.name}</T>
-              <T v="body" style={{ marginTop: space.xs }}>{r.cuisine} · {r.area}</T>
-              <T v="small" style={{ color: r.halal ? color.accent : color.muted, marginTop: 2 }}>{r.halal ? 'Halal' : 'Not halal'}</T>
+              <T style={nameStyle(22)} numberOfLines={2}>{r.name}</T>
+              <T v="body">{r.cuisine} · {r.area}</T>
+              <T v="small" style={{ color: r.halal ? color.ink : color.muted }}>{r.halal ? 'Halal' : 'Not halal'}</T>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <T v="num" style={{ fontFamily: font.display, fontSize: 36, lineHeight: 36 }}>{r.etaMin}</T>
+              <T v="num" style={{ fontSize: 28, lineHeight: 32 }}>{r.etaMin}</T>
               <T v="small">min</T>
             </View>
           </Row>
@@ -108,7 +110,7 @@ function Menu({ restaurant, onBack, add, swap, onReplace, onKeep }: { restaurant
     <Screen>
       <Pressable testID="market-back" onPress={onBack} hitSlop={8}><T v="body" style={{ fontFamily: font.bodyStrong, textDecorationLine: 'underline' }}>All restaurants</T></Pressable>
       <Gap h={space.l} />
-      <T v="hero" numberOfLines={2}>{restaurant.name}</T>
+      <T style={nameStyle(40)} numberOfLines={2}>{restaurant.name}</T>
       <Gap h={space.s} />
       <T v="body">{restaurant.cuisine} · {restaurant.area} · about {restaurant.etaMin} min</T>
       <Gap h={space.xl} />
@@ -126,15 +128,19 @@ function Menu({ restaurant, onBack, add, swap, onReplace, onKeep }: { restaurant
       {items.map(item => {
         const qty = s.cart.find(l => l.itemId === item.id)?.qty ?? 0;
         return (
-          <View key={item.id} style={{ marginBottom: space.s, marginHorizontal: -space.xl, paddingHorizontal: space.xl, paddingVertical: space.l, backgroundColor: qty ? color.accentSoft : color.surface }}>
-            <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: space.m }}>
-              <T v="h2" style={{ flex: 1 }}>{item.name}</T>
-              <T v="num">{rm(item.priceSen)}</T>
+          <Pressable key={item.id} testID={`add-${item.id}`} onPress={() => add(item.id, restaurant.id)} style={({ pressed }) => ({ minHeight: 56, marginHorizontal: -space.xl, paddingHorizontal: space.xl, paddingVertical: space.m, backgroundColor: pressed || qty ? color.sunk : 'transparent' })}>
+            <Row style={{ gap: space.m, alignItems: 'center' }}>
+              <Thumb source={dishPhoto(item.id)} label={item.name} />
+              <View style={{ flex: 1 }}>
+                <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: space.m }}>
+                  <T style={[nameStyle(20), { flex: 1 }]}>{item.name}</T>
+                  <T v="num">{rm(item.priceSen)}</T>
+                </Row>
+                <T v="body" style={{ color: color.ink2 }}>{item.description}</T>
+                <T v="small" style={{ color: color.ink, marginTop: 2 }}>{qty ? `${qty} in the cart` : 'Add'}</T>
+              </View>
             </Row>
-            <T v="body" style={{ color: color.ink2, marginTop: 2 }}>{item.description}</T>
-            <Gap h={space.m} />
-            <Button testID={`add-${item.id}`} kind={qty ? 'primary' : 'secondary'} label={qty ? `Add · ${qty}` : 'Add'} onPress={() => add(item.id, restaurant.id)} />
-          </View>
+          </Pressable>
         );
       })}
       {!items.length && <T v="body">Nothing on the menu right now.</T>}
@@ -160,7 +166,7 @@ function Cart({ address, setAddress, note, setNote, onPlace, real, payErr }: { a
         return (
           <View key={l.itemId} style={{ marginBottom: space.m }}>
             <Card>
-              <T v="h2">{item.name}</T>
+              <T style={nameStyle(20)}>{item.name}</T>
               {!item.available && <T v="small" style={{ color: color.danger }}>No longer available</T>}
               <Gap h={space.m} />
               <Row style={{ justifyContent: 'space-between' }}>
@@ -184,7 +190,7 @@ function Cart({ address, setAddress, note, setNote, onPlace, real, payErr }: { a
       <TextInput testID="market-note" value={note} onChangeText={setNote} placeholder="Optional" placeholderTextColor={color.faint} style={input} />
       <Gap h={space.l} />
       <T v="small">Total</T>
-      <T v="num" style={{ fontFamily: font.display, fontSize: 44, lineHeight: 46, letterSpacing: -1.2 }}>{rm(cartTotalSen(s))}</T>
+      <T v="num" style={{ fontSize: 44, lineHeight: 48 }}>{rm(cartTotalSen(s))}</T>
       <Gap h={space.l} />
       <Button testID={real ? 'market-continue-pay' : 'market-place-order'} label={real ? 'Continue to payment' : 'Place order'} onPress={onPlace} disabled={address.trim().length < 4 || blocked} />
       <Gap h={space.s} />
@@ -201,10 +207,16 @@ function Orders({ mine, restaurants, justId, account }: { mine: { id: string; re
     <Screen>
       <T v="hero">Your orders</T>
       <Gap h={space.m} />
-      {justId && <View style={{ marginBottom: space.l }}><Card tone="accent"><OrderMark /><Gap h={space.s} /><T testID="market-placed" v="body">{account.real ? `Order ${justId} is saved. Pay to send it to the kitchen.` : `Order ${justId} is with the vendor on this device.`}</T></Card></View>}
+      {justId && <View style={{ marginBottom: space.l }}>
+        <View style={{ backgroundColor: color.ink, paddingHorizontal: space.l, paddingVertical: space.s }}><T v="label" style={{ color: color.onInk }}>Ordered</T></View>
+        <Gap h={space.m} />
+        <OrderMark />
+        <Gap h={space.s} />
+        <T testID="market-placed" v="body">{account.real ? `Order ${justId} is saved. Pay to send it to the kitchen.` : `Order ${justId} is with the vendor on this device.`}</T>
+      </View>}
       {!orders.length && <T v="body">You have not ordered yet.</T>}
       {orders.map(o => (
-        <OrderBlock key={o.id} order={o} restaurant={restaurants.find(r => r.id === o.restaurantId)?.name}>
+        <OrderBlock key={o.id} order={o} restaurant={restaurants.find(r => r.id === o.restaurantId)?.name} mark={o.status === 'delivered'}>
           {account.real && o.status === 'awaiting_payment' && <>
             <Gap h={space.m} />
             <PayButton testID={`market-pay-${o.id}`} kind="order" payRef={o.id} amountSen={o.lines.reduce((n, l) => n + l.priceSen * l.qty, 0)} email={account.email} description={`Makan Hour ${o.id}`} label="Pay with FPX or card" onPaid={() => { refresh(); }} />

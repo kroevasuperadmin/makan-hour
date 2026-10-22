@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { Button, color, fieldStyle, font, Gap, IconName, radius, Row, space, T, useReducedMotion } from '@makan/ui';
+import { Button, color, fieldStyle, font, Gap, IconName, nameStyle, radius, Row, space, T, useReducedMotion } from '@makan/ui';
+import { LUNCH, LUNCH_CREDIT, LUNCH_LABEL } from './photos';
 import { authAvailable, claimMarket, createOffice, looksLikeEmail, MarketMembership, Membership, myMemberships, NotSetUp, Role, signedInEmail, signInPassword, signOutReal, signUpPassword } from '@makan/core';
 import { Account, ACCOUNTS, accountTestId, corporateFlowOn, DEMO_CODE, MARKET_ACCOUNTS, OFFICE_ACCOUNTS } from './accounts';
 import { Wordmark } from './Wordmark';
@@ -43,7 +44,6 @@ const toAccount = (m: Membership, email: string): Account => ({
   detail: `${ROLE_WORD[m.role]} · ${m.company}`,
 });
 const NOT_READY = 'Sign-in for real offices isn’t open yet. Until it is, use one of the demo accounts.';
-const STAIR = require('../assets/photos/stair.jpg');
 
 function Masthead() {
   const reduced = useReducedMotion();
@@ -60,17 +60,17 @@ function Masthead() {
   return (
     <View style={{ marginHorizontal: -space.xl }}>
       <Animated.View style={{ height: 168, overflow: 'hidden', transformOrigin: 'left center', transform: [{ scaleX: open }] }}>
-        <Animated.Image source={STAIR} accessibilityLabel="A white stair seen through a narrow opening. Photograph by Todd Quackenbush." style={{ width: '100%', height: 168, transform: [{ scale: zoom }] }} />
+        <Animated.Image source={LUNCH} accessibilityLabel={LUNCH_LABEL} style={{ width: '100%', height: 168, transform: [{ scale: zoom }] }} />
       </Animated.View>
-      <T v="small" style={{ marginTop: space.s, paddingHorizontal: space.xl }}>Photograph by Todd Quackenbush.</T>
+      <T v="small" style={{ marginTop: space.s, paddingHorizontal: space.xl }}>{LUNCH_CREDIT}</T>
     </View>
   );
 }
 
 function Door({ id, title, line, onPress }: { id: string; title: string; line: string; onPress: () => void }) {
   return (
-    <Pressable testID={id} onPress={onPress} accessibilityRole="button" style={({ pressed }) => ({ backgroundColor: pressed ? color.sunk : color.surface, paddingVertical: 18, paddingHorizontal: space.l, marginBottom: space.s, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-      <T style={{ fontFamily: font.display, fontSize: 26, lineHeight: 30, letterSpacing: -0.6, color: color.ink }}>{title}</T>
+    <Pressable testID={id} onPress={onPress} accessibilityRole="button" style={({ pressed }) => ({ minHeight: 56, justifyContent: 'center', backgroundColor: pressed ? color.sunk : color.surface, paddingVertical: 14, paddingHorizontal: space.l, marginBottom: space.s, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+      <T style={{ fontFamily: font.bodyStrong, fontSize: 20, lineHeight: 26, color: color.ink }}>{title}</T>
       <T v="body" style={{ marginTop: 2 }}>{line}</T>
     </Pressable>
   );
@@ -206,7 +206,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
         : <Button testID={`oauth-${p}`} kind={p === list[0] ? 'primary' : 'secondary'} label={`Continue with ${PROVIDER_NAME[p]}`} onPress={() => provider(p)} disabled={busy} />}
     </View>
   ));
-  const rule = (label: string) => <T v="h2" style={{ fontFamily: font.display, fontSize: 22, lineHeight: 26, letterSpacing: -0.4 }}>{label}</T>;
+  const rule = (label: string) => <T v="h2">{label}</T>;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }}>
@@ -301,7 +301,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
           </> : <>
             <Masthead />
             <Gap h={space.l} />
-            <T v="hero">Who’s signing in?</T>
+            <T v="hero">What’s for lunch today?</T>
             <Gap h={space.m} />
             <T v="body">Customers, kitchens and riders each use their own email. Device previews are listed below.</T>
             <Gap h={space.xl} />
@@ -310,7 +310,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
             ))}
             {corporateFlowOn && <>
               <Gap h={space.l} />
-              <T v="h2" style={{ fontFamily: font.display, fontSize: 22, lineHeight: 26, letterSpacing: -0.4 }}>Office lunch</T>
+              <T v="h2">Office lunch</T>
               <Gap h={space.s} />
               {CHOICES.map(c => (
                 <Door key={c.role} id={`role-${c.role}`} title={c.title} line={c.line} onPress={() => pickRole(c.role)} />
@@ -321,10 +321,10 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
             {rule('Demo accounts')}
             <Gap h={space.l} />
             {[...MARKET_ACCOUNTS, ...(corporateFlowOn ? OFFICE_ACCOUNTS : [])].map(a => (
-              <Pressable key={a.email} testID={accountTestId(a)} onPress={() => startDemo(a)} style={({ pressed }) => ({ paddingVertical: space.m, backgroundColor: pressed ? color.sunk : 'transparent', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+              <Pressable key={a.email} testID={accountTestId(a)} onPress={() => startDemo(a)} style={({ pressed }) => ({ minHeight: 56, justifyContent: 'center', paddingVertical: space.m, backgroundColor: pressed ? color.sunk : 'transparent', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
                 <Row style={{ gap: space.m }}>
                   <View style={{ flex: 1 }}>
-                    <T v="body" style={{ fontFamily: font.bodyStrong }}>{a.name}</T>
+                    <T style={nameStyle(18)}>{a.name}</T>
                     <T v="small" numberOfLines={1}>{a.detail}</T>
                   </View>
                   <T v="small">{roleLabel(a)}</T>
