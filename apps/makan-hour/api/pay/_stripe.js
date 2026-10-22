@@ -28,5 +28,5 @@ function verifySig(raw, header, secret) {
   const want = crypto.createHmac('sha256', secret).update(`${t}.${raw}`).digest('hex');
   return header.split(',').filter(p => p.startsWith('v1=')).some(p => { const got = p.slice(3); return got.length === want.length && crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want)); });
 }
-function cors(res) { res.setHeader('access-control-allow-origin', '*'); res.setHeader('access-control-allow-headers', 'content-type'); }
+function cors(res) { res.setHeader('access-control-allow-origin', '*'); res.setHeader('access-control-allow-headers', 'content-type, authorization'); }
 module.exports = { configured, testMode, stripe, verifySig, cors };

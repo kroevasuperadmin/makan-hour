@@ -44,6 +44,11 @@ export async function signUpPassword(email: string, password: string, redirectTo
   if (error) throw new Error(friendly(error.message));
   return !!data.session;
 }
+export async function accessToken(): Promise<string | null> {
+  if (!auth) return null;
+  const { data } = await auth.auth.getSession();
+  return data.session?.access_token ?? null;
+}
 export async function signedInEmail(): Promise<string | null> {
   if (!auth) return null;
   const { data } = await auth.auth.getSession();
