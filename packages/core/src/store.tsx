@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { Drop, DropStage, Employee, Invoice, Order } from './types';
 import * as seed from './seed';
 import { defaultSession, fetchLive, hasTopUpCols, LiveState, removeOrder, resetLive, subscribe, supabase, writeDrop, writeOrder, writeProfile, writeSession } from './live';
+import { openDemoOn } from './open-demo';
 
 export interface State {
   caterers: typeof seed.caterers; dishes: typeof seed.dishes; offices: typeof seed.offices;
@@ -88,7 +89,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const liveRef = useRef(live); liveRef.current = live;
 
   const refresh = useCallback(async () => {
-    if (!supabase || pending.current > 0) return;
+    if (openDemoOn() || !supabase || pending.current > 0) return;
     try {
       let l = await fetchLive();
       if (!l) { await resetLive(); l = await fetchLive(); }
@@ -97,6 +98,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (openDemoOn()) return;
     refresh();
     const unsub = subscribe(() => refresh());
     const poll = setInterval(refresh, 4000); // fallback if the realtime socket drops
@@ -110,7 +112,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     // exist (hasTopUpCols); otherwise they stay on this device.
     const sess = (p: Partial<LiveState['session']>) => {
       setLive(l => (l.session.topUpsAllowed === undefined && !hasTopUpCols ? l : { ...l, session: { ...l.session, ...p } }));
-      if (supabase && hasTopUpCols) { pending.current++; queue = queue.then(async () => { try { await writeSession(p); } catch { setConnected(false); } finally { pending.current--; refresh(); } }); }
+      if (supabase && hasTopUpCols && !openDemoOn()) { pending.current++; queue = queue.then(async () => { try { await writeSession(p); } catch { setConnected(false); } finally { pending.current--; refresh(); } }); }
     };
     if (a.t === 'topups') { setLoc(x => ({ ...x, topUpsAllowed: a.on })); sess({ topUpsAllowed: a.on }); return; }
     if (a.t === 'topupPaid') { setLoc(x => ({ ...x, topUpPaidRef: a.ref })); sess({ topUpPaidRef: a.ref }); return; }
@@ -118,7 +120,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if ((a.t === 'order' || a.t === 'cancel') && !liveRef.current.session.cutoffPassed) { setLoc(x => ({ ...x, topUpPaidRef: null })); if (hasTopUpCols) sess({ topUpPaidRef: null }); }
     const [next, writes] = apply(liveRef.current, a, Date.now());
     setLive(next);
-    if (!supabase) return;
+    if (openDemoOn() || !supabase) return;
     pending.current++;
     // Writes go through one queue so rapid taps land in the database in the order they were made.
     queue = queue.then(async () => { try { for (const w of writes) await w(); } catch { setConnected(false); } finally { pending.current--; refresh(); } });

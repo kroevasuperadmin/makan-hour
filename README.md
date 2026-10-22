@@ -2,7 +2,7 @@
 
 B2B office lunch pre-order drops for one Klang Valley district. Employees order by 10:30 am, orders batch per caterer, each office gets one drop, and the company pays one monthly invoice. Makan Hour never owns a kitchen.
 
-**One app** (`my.makanhour.app`), with three experiences. Your account decides which one you see when you sign in; there is no role switcher inside the app.
+**One app** (`my.makanhour.app`), with three experiences. Your account decides which one you see when you sign in. A role switcher appears only when open demo is switched on, below.
 
 | Signed in as | Experience | Look |
 |---|---|---|
@@ -15,6 +15,24 @@ All three share the bowl mark and the serif "Makan Hour" wordmark. Sign-in uses 
 Live web build: **https://makanhour.rizqey.com/app** (proxied by makan-hour-site to the makan-hour-app project, built with baseUrl /app; makan-hour-app.vercel.app redirects there except /api/*)
 
 Sign-in: see docs/AUTH.md.
+
+## Open demo (`MAKAN_OPEN_DEMO`)
+
+One switch. Set it to `on` to let any email create an account and use customer, vendor, rider and admin. Leave it unset, or set it to anything else (for example `off`), to keep today’s sign-in: the office list and the marketplace list still decide who gets in.
+
+Put this in `apps/makan-hour/.env`, or in front of the command:
+
+```bash
+MAKAN_OPEN_DEMO=on
+```
+
+Then start or export again. The app reads the value when that process starts, so change it and start once more to turn it off:
+
+```bash
+MAKAN_OPEN_DEMO=off npm start
+```
+
+While it is `on`, sign-up does not check `makan_members`. After sign-in, the **Use as** switch moves between the four sides. Orders stay on that device and use the sample kitchens only (Dapur Contoh, Rasa Sampel, Kedai Contoh). Office lunch screens and saved marketplace orders are not shown. Stripe is not used.
 
 All companies, banks and people are fictional. The payment step is a **sandbox mock**: no money moves and no bank is contacted.
 
