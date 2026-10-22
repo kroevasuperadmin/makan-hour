@@ -1,4 +1,4 @@
-import { Caterer, Dish, Drop, Employee, Invoice, Office, Order } from './types';
+import type { Caterer, Dish, Drop, Employee, Invoice, Office, Order } from './types';
 
 // All company names are deliberately fictional ("Contoh" and "Sampel" are Malay for "example" / "sample").
 export const caterers: Caterer[] = [

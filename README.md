@@ -59,7 +59,7 @@ Deploy: copy `apps/makan-hour/dist` and `apps/makan-hour/api` (payment and push 
 
 ## Reset before the demo
 
-Sign in as the admin. Press and hold the "Makan Hour" wordmark for about 1.5 seconds, then tap *Reset the demo*. This clears the order, nudges, cutoff, drops and payment for everyone signed in, and sets the clock back to 9:18 am.
+Sign in as the admin. Press and hold the "Makan Hour" wordmark for about 1.5 seconds, then tap *Reset the demo*. This clears the order, nudges, cutoff, drops and payment for everyone signed in, and sets the clock back to 9:18 am. From a computer, `node scripts/reset-demo.mjs --yes` does that same shared reset. It will not run without `--yes`, and it will not run unless the Supabase URL is the demo project. See docs/DEMO_RESET.md.
 
 ## 3-device demo script (about 5 minutes)
 

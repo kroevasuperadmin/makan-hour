@@ -70,6 +70,7 @@ export async function writeDrop(d: Drop) {
 export async function writeProfile(employeeId: string, floor: string, desk: string) {
   const { error } = await need().from('makan_profiles').upsert({ session_id: SESSION, employee_id: employeeId, floor, desk }); if (error) throw error;
 }
+// scripts/reset-demo.mjs sends this same write for the 3-phone demo. Keep them together.
 export async function resetLive() {
   const db = need();
   await db.from('makan_orders').delete().eq('session_id', SESSION);
