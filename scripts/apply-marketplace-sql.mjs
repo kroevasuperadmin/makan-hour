@@ -1,6 +1,8 @@
-// Apply marketplace migrations 5 and 6 to the live Supabase project.
-// Requires SUPABASE_ACCESS_TOKEN (a personal access token, sbp_…). Never prints the token.
-// Refuses if either file drops, truncates, or deletes an office-lunch table.
+// Apply marketplace SQL to the live Supabase project. This file is not run by the app.
+// Requires SUPABASE_ACCESS_TOKEN (a personal access token). Never prints the token.
+// Order: migration 5, member roles, migration 6.
+// Refuses drop, truncate, or delete of an office-lunch table.
+// Only the member-roles file may alter makan_members, and only that table.
 // With SUPABASE_SERVICE_ROLE_KEY, writes a JSON backup of those tables before any SQL.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -10,14 +12,19 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ref = 'rlfllmhcjqhgeoikjbha';
 const files = [
   'supabase/makan_migration_5_marketplace.sql',
+  'supabase/makan_members_market_roles.sql',
   'supabase/makan_migration_6_marketplace_rls.sql',
 ];
+const roleFile = 'supabase/makan_members_market_roles.sql';
 const office = ['makan_session', 'makan_orders', 'makan_drops', 'makan_profiles', 'makan_members', 'makan_offices', 'makan_push_tokens'];
-const banned = new RegExp(`\\b(drop|truncate|delete\\s+from|alter\\s+table)\\s+(if\\s+exists\\s+)?(public\\.)?(${office.join('|')})\\b`, 'i');
+const destructive = new RegExp(`\\b(drop\\s+table|truncate|delete\\s+from)\\s+(if\\s+exists\\s+)?(public\\.)?(${office.join('|')})\\b`, 'i');
+const alterAny = new RegExp(`\\balter\\s+table\\s+(if\\s+exists\\s+)?(public\\.)?(${office.join('|')})\\b`, 'i');
+const alterOther = new RegExp(`\\balter\\s+table\\s+(if\\s+exists\\s+)?(public\\.)?(${office.filter(t => t !== 'makan_members').join('|')})\\b`, 'i');
 
 for (const f of files) {
   const sql = readFileSync(resolve(root, f), 'utf8');
-  if (banned.test(sql)) {
+  const bad = destructive.test(sql) || (f === roleFile ? alterOther.test(sql) : alterAny.test(sql));
+  if (bad) {
     console.error(`refusing ${f}: it names a destructive change to an office-lunch table`);
     process.exit(1);
   }

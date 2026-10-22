@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { checkoutStatus, useMarket } from '@makan/core';
+import { checkoutStatus, isMarketDoor, marketplaceDbOn, useMarket } from '@makan/core';
 import { color, font, Row, space, T } from '@makan/ui';
 import { Wordmark } from '../Wordmark';
 import { Account } from '../accounts';
@@ -18,14 +18,14 @@ export function MarketShell({ account, onSignOut }: { account: Account; onSignOu
   const admin = account.role === 'admin';
   const word = roleWord(account.role);
   useEffect(() => {
-    if (!account.real) return;
-    const stop = goLive();
+    if (!account.real || !marketplaceDbOn() || !isMarketDoor(account.role)) return;
+    const stop = goLive(account.role);
     if (typeof window !== 'undefined') {
       const paid = new URLSearchParams(window.location.search).get('paid');
       if (paid && paid.startsWith('cs_')) checkoutStatus(paid).then(() => refresh()).catch(() => {});
     }
     return stop;
-  }, [account.real, account.email, goLive, refresh]);
+  }, [account.real, account.role, account.email, goLive, refresh]);
   return (
     <SafeAreaView testID={`market-shell-${account.role === 'admin' ? 'admin' : account.role}`} style={{ flex: 1, backgroundColor: admin ? color.ink : color.canvas }} edges={['top', 'bottom']}>
       <StatusBar style={admin ? 'light' : 'dark'} />

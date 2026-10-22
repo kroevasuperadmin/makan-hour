@@ -1,6 +1,6 @@
-// Marketplace preview. This module never imports the Supabase client.
-// Orders, carts and menu toggles live in memory for the session.
-// supabase/makan_migration_5_marketplace.sql is the matching schema and is not applied here.
+// Marketplace preview. This module never imports the Supabase client and never applies SQL.
+// Orders, carts and menu toggles stay in memory unless MAKAN_MARKETPLACE_DB=on (market-flag.ts).
+// The tables live in supabase/makan_migration_5_marketplace.sql. Roles are read from makan_members.
 
 export type MarketStatus = 'awaiting_payment' | 'placed' | 'accepted' | 'preparing' | 'ready' | 'picked_up' | 'delivered' | 'cancelled';
 
@@ -150,6 +150,33 @@ export function whenLabel(ms: number) {
 
 const OPEN: MarketStatus[] = ['awaiting_payment', 'placed', 'accepted', 'preparing', 'ready', 'picked_up'];
 export const isOpenStatus = (status: MarketStatus) => OPEN.includes(status);
+
+export type MarketDoor = 'customer' | 'vendor' | 'rider' | 'admin';
+
+export function isMarketDoor(role: string): role is MarketDoor {
+  return role === 'customer' || role === 'vendor' || role === 'rider' || role === 'admin';
+}
+
+// Admin sees every marketplace order, including unpaid ones. Everyone else sees a slice.
+// Office-lunch orders are not in this list.
+export function ordersVisibleTo(role: MarketDoor, actorId: string, restaurantId: string | null, orders: MarketOrder[]): MarketOrder[] {
+  if (role === 'admin') return orders.slice();
+  if (role === 'customer') return orders.filter(o => o.customerId === actorId);
+  if (role === 'vendor') return orders.filter(o => o.restaurantId === restaurantId && o.status !== 'awaiting_payment');
+  return orders.filter(o => (o.status === 'ready' && !o.riderId) || o.riderId === actorId);
+}
+
+export function pickMarketDoor<T extends { role: string }>(rows: T[], door: MarketDoor): T | null {
+  const row = rows.find(r => r.role === door);
+  return row ?? null;
+}
+
+// Migration 5 stores the vendor's address on makan_restaurants.vendor_email.
+export function restaurantIdForVendor(email: string, restaurants: { id: string; vendorEmail?: string | null }[]): string | null {
+  const e = email.trim().toLowerCase();
+  if (!e) return null;
+  return restaurants.find(r => (r.vendorEmail ?? '').trim().toLowerCase() === e)?.id ?? null;
+}
 
 function mapOrder(s: MarketState, id: string, fn: (o: MarketOrder) => MarketOrder): MarketState {
   return { ...s, orders: s.orders.map(o => (o.id === id ? fn(o) : o)) };

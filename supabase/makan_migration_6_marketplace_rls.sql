@@ -1,6 +1,7 @@
--- Makan Hour migration 6: marketplace access. Apply after makan_migration_5_marketplace.sql.
--- Additive. Touches only makan_restaurants, makan_menu_items, makan_market_members,
--- makan_consumer_orders, makan_consumer_order_lines, and new functions.
+-- Makan Hour migration 6: marketplace access. Apply after makan_migration_5_marketplace.sql
+-- and supabase/makan_members_market_roles.sql, in that order.
+-- Roles are read from makan_members. Order rows still reference makan_market_members
+-- (migration 5). makan_claim_market copies a matching row across so those foreign keys work.
 -- Does not drop or alter office-lunch tables (makan_session, makan_orders, makan_drops,
 -- makan_profiles, makan_members, makan_offices, makan_push_tokens).
 
@@ -52,34 +53,91 @@ insert into public.makan_market_members (email, name, role, restaurant_id) value
   ('farah.market@makanhour.example', 'Farah Lim', 'admin', null)
 on conflict (email, role) do nothing;
 
+-- Role source is makan_members. Migration 5 order rows point at makan_market_members,
+-- so this copies one shadow row per role. Not granted to the client.
+create or replace function public.makan_sync_market_member(p_role text)
+returns public.makan_market_members
+language plpgsql security definer set search_path = public as $$
+declare
+  mem public.makan_members%rowtype;
+  out public.makan_market_members%rowtype;
+  rest text;
+begin
+  if auth.uid() is null then raise exception 'sign in first'; end if;
+  if p_role not in ('customer', 'vendor', 'rider', 'admin') then raise exception 'not that role'; end if;
+  select * into mem from public.makan_members
+    where user_id = auth.uid() and role = p_role
+    order by created_at
+    limit 1;
+  if mem.id is null then raise exception 'not that role'; end if;
+  if p_role = 'vendor' then
+    select r.id into rest from public.makan_restaurants r
+      where r.vendor_email = mem.email and r.active
+      order by r.id
+      limit 1;
+  end if;
+  insert into public.makan_market_members as mm (email, name, role, restaurant_id, user_id)
+    values (mem.email, mem.name, p_role, rest, auth.uid())
+  on conflict (email, role) do update set
+    user_id = auth.uid(),
+    name = excluded.name,
+    restaurant_id = coalesce(excluded.restaurant_id, mm.restaurant_id)
+  where mm.user_id is null or mm.user_id = auth.uid();
+  select * into out from public.makan_market_members where email = mem.email and role = p_role;
+  if out.id is null or out.user_id is distinct from auth.uid() then raise exception 'not that role'; end if;
+  return out;
+end $$;
+
+revoke all on function public.makan_sync_market_member(text) from public, anon, authenticated;
+
 -- Who is signed in. Security definer so callers don't need table grants.
--- Returns every marketplace role on this email. The app picks the door the person chose.
+-- Returns every marketplace role on this email from makan_members. The app picks the door.
 create or replace function public.makan_claim_market()
 returns table (member_id uuid, role text, name text, restaurant_id text, restaurant_name text)
 language plpgsql security definer set search_path = public as $$
-declare v_email text := lower(coalesce(auth.jwt()->>'email', ''));
+declare
+  v_email text := lower(coalesce(auth.jwt()->>'email', ''));
+  r record;
+  synced public.makan_market_members%rowtype;
 begin
   if auth.uid() is null or v_email = '' then raise exception 'sign in first'; end if;
-  update public.makan_market_members m
+  update public.makan_members m
     set user_id = auth.uid()
-    where m.email = v_email and (m.user_id is null or m.user_id = auth.uid());
-  return query
-    select m.id, m.role, m.name, m.restaurant_id, r.name
-    from public.makan_market_members m
-    left join public.makan_restaurants r on r.id = m.restaurant_id
+    where m.email = v_email
+      and m.role in ('customer', 'vendor', 'rider', 'admin')
+      and (m.user_id is null or m.user_id = auth.uid());
+  for r in
+    select distinct m.role as member_role
+    from public.makan_members m
     where m.user_id = auth.uid()
-    order by m.created_at;
+      and m.role in ('customer', 'vendor', 'rider', 'admin')
+    order by m.role
+  loop
+    synced := public.makan_sync_market_member(r.member_role);
+    member_id := synced.id;
+    role := synced.role;
+    name := synced.name;
+    restaurant_id := synced.restaurant_id;
+    select rr.name into restaurant_name from public.makan_restaurants rr where rr.id = synced.restaurant_id;
+    return next;
+  end loop;
 end $$;
 
-create or replace function public.makan_market_feed()
+drop function if exists public.makan_market_feed();
+
+create or replace function public.makan_market_feed(p_role text)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
 declare m public.makan_market_members%rowtype;
 begin
   if auth.uid() is null then raise exception 'sign in first'; end if;
-  select * into m from public.makan_market_members where user_id = auth.uid() order by created_at limit 1;
-  if m.id is null then
-    return jsonb_build_object('restaurants', '[]'::jsonb, 'items', '[]'::jsonb, 'orders', '[]'::jsonb);
-  end if;
+  if p_role not in ('customer', 'vendor', 'rider', 'admin') then raise exception 'not that role'; end if;
+  if not exists (
+    select 1 from public.makan_members where user_id = auth.uid() and role = p_role
+  ) then raise exception 'not that role'; end if;
+  select * into m from public.makan_market_members
+    where user_id = auth.uid() and role = p_role
+    limit 1;
+  if m.id is null then raise exception 'sign in again'; end if;
   return jsonb_build_object(
     'restaurants', coalesce((
       select jsonb_agg(jsonb_build_object(
@@ -91,7 +149,7 @@ begin
         'id', i.id, 'restaurantId', i.restaurant_id, 'name', i.name, 'description', i.description,
         'priceSen', i.price_sen, 'available', i.available))
       from public.makan_menu_items i
-      where i.available or m.role = 'admin' or (m.role = 'vendor' and i.restaurant_id = m.restaurant_id)), '[]'::jsonb),
+      where i.available or p_role = 'admin' or (p_role = 'vendor' and i.restaurant_id = m.restaurant_id)), '[]'::jsonb),
     'orders', coalesce((
       select jsonb_agg(x.obj order by x.placed_at desc)
       from (
@@ -113,10 +171,10 @@ begin
         from public.makan_consumer_orders c
         join public.makan_market_members cu on cu.id = c.customer_member_id
         left join public.makan_market_members ri on ri.id = c.rider_member_id
-        where (m.role = 'admin')
-          or (m.role = 'customer' and c.customer_member_id = m.id)
-          or (m.role = 'vendor' and c.restaurant_id = m.restaurant_id and c.status <> 'awaiting_payment')
-          or (m.role = 'rider' and ((c.status = 'ready' and c.rider_member_id is null) or c.rider_member_id = m.id))
+        where (p_role = 'admin')
+          or (p_role = 'customer' and c.customer_member_id = m.id)
+          or (p_role = 'vendor' and c.restaurant_id = m.restaurant_id and c.status <> 'awaiting_payment')
+          or (p_role = 'rider' and ((c.status = 'ready' and c.rider_member_id is null) or c.rider_member_id = m.id))
       ) x), '[]'::jsonb)
   );
 end $$;
@@ -128,8 +186,7 @@ declare
   v_id text; v_total int := 0; i int; v_line jsonb; v_item public.makan_menu_items%rowtype; v_qty int;
 begin
   if auth.uid() is null then raise exception 'sign in first'; end if;
-  select * into m from public.makan_market_members where user_id = auth.uid() and role = 'customer' limit 1;
-  if m.id is null then raise exception 'customers only'; end if;
+  m := public.makan_sync_market_member('customer');
   if length(btrim(coalesce(p_address, ''))) < 4 then raise exception 'add a delivery address'; end if;
   if jsonb_typeof(p_lines) <> 'array' or jsonb_array_length(p_lines) < 1 or jsonb_array_length(p_lines) > 20 then
     raise exception 'cart is empty';
@@ -161,8 +218,8 @@ returns text language plpgsql security definer set search_path = public as $$
 declare m public.makan_market_members%rowtype; o public.makan_consumer_orders%rowtype; v_next text;
 begin
   if auth.uid() is null then raise exception 'sign in first'; end if;
-  select * into m from public.makan_market_members where user_id = auth.uid() and role = 'vendor' limit 1;
-  if m.id is null or m.restaurant_id is null then raise exception 'vendors only'; end if;
+  m := public.makan_sync_market_member('vendor');
+  if m.restaurant_id is null then raise exception 'vendors only'; end if;
   select * into o from public.makan_consumer_orders where id = p_order and restaurant_id = m.restaurant_id for update;
   if o.id is null then raise exception 'order not found'; end if;
   v_next := case o.status when 'placed' then 'accepted' when 'accepted' then 'preparing' when 'preparing' then 'ready' else null end;
@@ -176,8 +233,7 @@ returns text language plpgsql security definer set search_path = public as $$
 declare m public.makan_market_members%rowtype; o public.makan_consumer_orders%rowtype;
 begin
   if auth.uid() is null then raise exception 'sign in first'; end if;
-  select * into m from public.makan_market_members where user_id = auth.uid() and role = 'rider' limit 1;
-  if m.id is null then raise exception 'riders only'; end if;
+  m := public.makan_sync_market_member('rider');
   select * into o from public.makan_consumer_orders where id = p_order for update;
   if o.id is null or o.status <> 'ready' or o.rider_member_id is not null then raise exception 'that order is not ready'; end if;
   update public.makan_consumer_orders set status = 'picked_up', rider_member_id = m.id where id = o.id;
@@ -189,8 +245,7 @@ returns text language plpgsql security definer set search_path = public as $$
 declare m public.makan_market_members%rowtype; o public.makan_consumer_orders%rowtype;
 begin
   if auth.uid() is null then raise exception 'sign in first'; end if;
-  select * into m from public.makan_market_members where user_id = auth.uid() and role = 'rider' limit 1;
-  if m.id is null then raise exception 'riders only'; end if;
+  m := public.makan_sync_market_member('rider');
   select * into o from public.makan_consumer_orders where id = p_order for update;
   if o.id is null or o.status <> 'picked_up' or o.rider_member_id <> m.id then raise exception 'that delivery is not yours'; end if;
   update public.makan_consumer_orders set status = 'delivered' where id = o.id;
@@ -202,8 +257,8 @@ returns boolean language plpgsql security definer set search_path = public as $$
 declare m public.makan_market_members%rowtype; v_on boolean;
 begin
   if auth.uid() is null then raise exception 'sign in first'; end if;
-  select * into m from public.makan_market_members where user_id = auth.uid() and role = 'vendor' limit 1;
-  if m.id is null or m.restaurant_id is null then raise exception 'vendors only'; end if;
+  m := public.makan_sync_market_member('vendor');
+  if m.restaurant_id is null then raise exception 'vendors only'; end if;
   update public.makan_menu_items set available = not available
     where id = p_item and restaurant_id = m.restaurant_id
     returning available into v_on;
@@ -212,14 +267,14 @@ begin
 end $$;
 
 revoke all on function public.makan_claim_market() from public, anon;
-revoke all on function public.makan_market_feed() from public, anon;
+revoke all on function public.makan_market_feed(text) from public, anon;
 revoke all on function public.makan_place_order(text, text, text, jsonb) from public, anon;
 revoke all on function public.makan_vendor_advance(text) from public, anon;
 revoke all on function public.makan_rider_pickup(text) from public, anon;
 revoke all on function public.makan_rider_deliver(text) from public, anon;
 revoke all on function public.makan_vendor_toggle(text) from public, anon;
 grant execute on function public.makan_claim_market() to authenticated;
-grant execute on function public.makan_market_feed() to authenticated;
+grant execute on function public.makan_market_feed(text) to authenticated;
 grant execute on function public.makan_place_order(text, text, text, jsonb) to authenticated;
 grant execute on function public.makan_vendor_advance(text) to authenticated;
 grant execute on function public.makan_rider_pickup(text) to authenticated;

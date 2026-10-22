@@ -87,6 +87,21 @@ Reset from the admin phone first.
 
 Backup plan: if the venue Wi-Fi fails, use a pre-recorded screen video or `docs/screens/`. Without a network the phones cannot sync.
 
+## Marketplace database
+
+Customer, vendor, rider and admin stay on mock data until `MAKAN_MARKETPLACE_DB=on`. The app reads that as `EXPO_PUBLIC_MAKAN_MARKETPLACE_DB`, because Expo only ships variables with that prefix into the client. Leave both unset. This repo does not apply the SQL below, and it does not turn the switch on.
+
+Apply these in the Supabase SQL editor, in this order, before the switch can go on:
+
+1. `supabase/makan_migration_2.sql` — only when `makan_members` is not already in the project. Office sign-up created it. Do not re-run this file if that table is already there.
+2. `supabase/makan_migration_5_marketplace.sql` — marketplace tables. It does not change office lunch tables or `makan_members`.
+3. `supabase/makan_members_market_roles.sql` — lets `makan_members.role` be `customer`, `vendor`, `rider` or `admin`, and adds four marketplace people with no office. Existing office rows keep their office.
+4. `supabase/makan_migration_6_marketplace_rls.sql` — access functions, three sample restaurants, and the menu. Apply this last.
+
+Sign-in then takes the role from `makan_members`. Admin sees every marketplace order. A customer, vendor or rider sees only their own slice. Office lunch does not read these tables. Stripe code is unchanged. There is no WhatsApp bot.
+
+Until that list has been applied and the switch is `on`, use the demo accounts. Orders stay on the device.
+
 ## Known gaps
 
 - Sign-in is a mock. There is no real one-time code or session, and a reload goes back to sign-in.

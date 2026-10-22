@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { isOpenStatus, rm, useMarket, vendorNext, vendorNextLabel } from '@makan/core';
+import { isOpenStatus, ordersVisibleTo, rm, useMarket, vendorNext, vendorNextLabel } from '@makan/core';
 import { Badge, Button, Card, Gap, Screen, space, T } from '@makan/ui';
 import { Account } from '../accounts';
 import { TabBar } from './TabBar';
 import { OrderBlock } from './OrderBlock';
 
 export default function Vendor({ account }: { account: Account }) {
-  const { s, dispatch } = useMarket();
+  const { s, dispatch, live } = useMarket();
   const [tab, setTab] = useState<'orders' | 'menu'>('orders');
   const restaurant = s.restaurants.find(r => r.id === account.restaurantId);
-  const orders = s.orders.filter(o => o.restaurantId === account.restaurantId).slice().sort((a, b) => Number(isOpenStatus(b.status)) - Number(isOpenStatus(a.status)) || b.placedAt - a.placedAt);
+  const orders = ordersVisibleTo('vendor', account.actorId ?? '', account.restaurantId ?? null, s.orders).slice().sort((a, b) => Number(isOpenStatus(b.status)) - Number(isOpenStatus(a.status)) || b.placedAt - a.placedAt);
   const open = orders.filter(o => isOpenStatus(o.status)).length;
   if (!restaurant) return <Screen><T v="body">This account is not tied to a restaurant.</T></Screen>;
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1 }}>
-        {tab === 'menu' ? <Menu restaurantId={restaurant.id} vendorId={account.actorId ?? ''} /> : (
+        {tab === 'menu' ? <Menu restaurantId={restaurant.id} vendorId={account.actorId ?? ''} live={live} /> : (
           <Screen>
             <T v="hero" style={{ fontSize: 36 }}>{restaurant.name}</T>
             <Gap h={space.s} />
@@ -43,14 +43,14 @@ export default function Vendor({ account }: { account: Account }) {
   );
 }
 
-function Menu({ restaurantId, vendorId }: { restaurantId: string; vendorId: string }) {
+function Menu({ restaurantId, vendorId, live }: { restaurantId: string; vendorId: string; live: boolean }) {
   const { s, dispatch } = useMarket();
   const items = s.items.filter(i => i.restaurantId === restaurantId);
   return (
     <Screen>
       <T v="hero" style={{ fontSize: 36 }}>Menu</T>
       <Gap h={space.s} />
-      <T v="body">Customers only see dishes you leave available. This switch stays on this device.</T>
+      <T v="body">{live ? 'Customers only see dishes you leave available. This switch is saved.' : 'Customers only see dishes you leave available. This switch stays on this device.'}</T>
       <Gap h={space.xl} />
       {items.map(item => (
         <View key={item.id} testID={`menu-${item.id}`} style={{ marginBottom: space.m }}>

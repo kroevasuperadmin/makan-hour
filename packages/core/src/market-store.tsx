@@ -1,13 +1,14 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
-import { MarketAction, MarketState, reduceMarket, seedMarket } from './market';
+import { MarketAction, MarketDoor, MarketState, reduceMarket, seedMarket } from './market';
 import { loadMarket, riderDeliver, riderPickup, vendorAdvance, vendorToggle } from './market-db';
+import { marketplaceDbOn } from './market-flag';
 
 type Api = {
   s: MarketState;
   dispatch: (a: MarketAction) => void;
   live: boolean;
   refresh: () => Promise<void>;
-  goLive: () => () => void;
+  goLive: (role: MarketDoor) => () => void;
 };
 
 const Ctx = createContext<Api | null>(null);
@@ -16,16 +17,19 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const [s, setS] = useState<MarketState>(seedMarket);
   const [live, setLive] = useState(false);
   const mode = useRef<'local' | 'live'>('local');
+  const roleRef = useRef<MarketDoor>('customer');
   const stopPoll = useRef<(() => void) | null>(null);
 
   const pull = useCallback(async () => {
-    const next = await loadMarket();
+    const next = await loadMarket(roleRef.current);
     setS(prev => ({ ...prev, restaurants: next.restaurants, items: next.items, orders: next.orders }));
   }, []);
 
   const refresh = useCallback(async () => { if (mode.current === 'live') await pull(); }, [pull]);
 
-  const goLive = useCallback(() => {
+  const goLive = useCallback((role: MarketDoor) => {
+    if (!marketplaceDbOn()) return () => {};
+    roleRef.current = role;
     mode.current = 'live';
     setLive(true);
     let stop = false;
