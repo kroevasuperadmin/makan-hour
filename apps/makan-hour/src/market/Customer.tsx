@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
-import { cartCount, cartRestaurant, cartTotalSen, placeMarketOrder, Restaurant, rm, useMarket } from '@makan/core';
+import { cartCount, cartRestaurant, cartTotalSen, marketplaceDbOn, MarketOrder, ordersVisibleTo, placeMarketOrder, Restaurant, rm, useMarket } from '@makan/core';
 import { Badge, Button, Card, color, font, Gap, Icon, radius, Row, Screen, space, T } from '@makan/ui';
 import { Account } from '../accounts';
 import PayButton from '../PayButton';
@@ -16,7 +16,8 @@ export default function Customer({ account }: { account: Account }) {
   const [swap, setSwap] = useState<string | null>(null);
   const [justId, setJustId] = useState<string | null>(null);
   const [payErr, setPayErr] = useState<string | null>(null);
-  const mine = s.orders.filter(o => o.customerId === account.actorId);
+  const mine = ordersVisibleTo('customer', account.actorId ?? '', null, s.orders);
+  const saved = !!account.real && marketplaceDbOn();
   const current = cartRestaurant(s);
   const count = cartCount(s);
 
@@ -27,7 +28,7 @@ export default function Customer({ account }: { account: Account }) {
   };
   const place = async () => {
     if (!account.actorId || address.trim().length < 4 || !current) return;
-    if (account.real) {
+    if (saved) {
       setPayErr(null);
       try {
         const order = await placeMarketOrder({ restaurantId: current.id, address, note, lines: s.cart.map(l => ({ itemId: l.itemId, qty: l.qty })) });
@@ -48,7 +49,7 @@ export default function Customer({ account }: { account: Account }) {
 
   const restaurant = s.restaurants.find(r => r.id === restaurantId) ?? null;
   const body = tab === 'orders' ? <Orders mine={mine} restaurants={s.restaurants} justId={justId} account={account} />
-    : tab === 'cart' ? <Cart address={address} setAddress={setAddress} note={note} setNote={setNote} onPlace={place} real={!!account.real} payErr={payErr} />
+    : tab === 'cart' ? <Cart address={address} setAddress={setAddress} note={note} setNote={setNote} onPlace={place} real={saved} payErr={payErr} />
     : restaurant ? <Menu restaurant={restaurant} onBack={() => { setRestaurantId(null); setSwap(null); }} add={add} swap={swap} onReplace={id => { dispatch({ t: 'add', itemId: id, replace: true }); setSwap(null); }} onKeep={() => setSwap(null)} />
     : <Browse onOpen={setRestaurantId} />;
 
@@ -189,18 +190,19 @@ function Cart({ address, setAddress, note, setNote, onPlace, real, payErr }: { a
   );
 }
 
-function Orders({ mine, restaurants, justId, account }: { mine: { id: string; restaurantId: string }[]; restaurants: Restaurant[]; justId: string | null; account: Account }) {
-  const { s, refresh } = useMarket();
-  const orders = s.orders.filter(o => mine.some(m => m.id === o.id));
+function Orders({ mine, restaurants, justId, account }: { mine: MarketOrder[]; restaurants: Restaurant[]; justId: string | null; account: Account }) {
+  const { refresh } = useMarket();
+  const saved = !!account.real && marketplaceDbOn();
+  const orders = mine;
   return (
     <Screen>
       <T v="hero" style={{ fontSize: 36 }}>Your orders</T>
       <Gap h={space.m} />
-      {justId && <View style={{ marginBottom: space.l }}><Card tone="accent"><T testID="market-placed" v="body" style={{ color: color.ink }}>{account.real ? `Order ${justId} is saved. Pay to send it to the kitchen.` : `Order ${justId} is with the vendor on this device.`}</T></Card></View>}
+      {justId && <View style={{ marginBottom: space.l }}><Card tone="accent"><T testID="market-placed" v="body" style={{ color: color.ink }}>{saved ? `Order ${justId} is saved. Pay to send it to the kitchen.` : `Order ${justId} is with the vendor on this device.`}</T></Card></View>}
       {!orders.length && <T v="body">You have not ordered yet.</T>}
       {orders.map(o => (
         <OrderBlock key={o.id} order={o} restaurant={restaurants.find(r => r.id === o.restaurantId)?.name}>
-          {account.real && o.status === 'awaiting_payment' && <>
+          {saved && o.status === 'awaiting_payment' && <>
             <Gap h={space.m} />
             <PayButton testID={`market-pay-${o.id}`} kind="order" payRef={o.id} amountSen={o.lines.reduce((n, l) => n + l.priceSen * l.qty, 0)} email={account.email} description={`Makan Hour ${o.id}`} label="Pay with FPX or card" onPaid={() => { refresh(); }} />
           </>}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { isOpenStatus, useMarket } from '@makan/core';
+import { isOpenStatus, ordersVisibleTo, useMarket } from '@makan/core';
 import { Card, color, font, Gap, radius, Row, Screen, space, T } from '@makan/ui';
 import { OrderBlock } from './OrderBlock';
 
@@ -9,10 +9,11 @@ type Filter = 'all' | 'open' | 'delivered';
 export default function MarketAdmin() {
   const { s, dispatch, live } = useMarket();
   const [filter, setFilter] = useState<Filter>('all');
-  const placed = s.orders.filter(o => o.status === 'placed').length;
-  const active = s.orders.filter(o => o.status === 'accepted' || o.status === 'preparing' || o.status === 'ready' || o.status === 'picked_up').length;
-  const delivered = s.orders.filter(o => o.status === 'delivered').length;
-  const shown = s.orders.filter(o => filter === 'all' ? true : filter === 'delivered' ? o.status === 'delivered' : isOpenStatus(o.status));
+  const orders = ordersVisibleTo('admin', '', null, s.orders);
+  const placed = orders.filter(o => o.status === 'placed').length;
+  const active = orders.filter(o => o.status === 'accepted' || o.status === 'preparing' || o.status === 'ready' || o.status === 'picked_up').length;
+  const delivered = orders.filter(o => o.status === 'delivered').length;
+  const shown = orders.filter(o => filter === 'all' ? true : filter === 'delivered' ? o.status === 'delivered' : isOpenStatus(o.status));
   return (
     <ScrollView style={{ flex: 1 }}>
       <Screen>
@@ -21,7 +22,7 @@ export default function MarketAdmin() {
         <T v="body">{live ? 'Every saved marketplace order. Office lunch stays separate.' : 'Customers, vendors and riders on this device. Office lunch is a separate demo.'}</T>
         <Gap h={space.xl} />
         <Row style={{ gap: space.s }}>
-          <Stat id="market-count-all" n={s.orders.length} label="Orders" />
+          <Stat id="market-count-all" n={orders.length} label="Orders" />
           <Stat id="market-count-placed" n={placed} label="Placed" />
         </Row>
         <Gap h={space.s} />

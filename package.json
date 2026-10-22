@@ -10,6 +10,7 @@
     "build:web": "cd apps/makan-hour && npx expo export --platform web",
     "e2e": "node scripts/demo-e2e.mjs",
     "e2e:market": "node scripts/market-e2e.mjs",
+    "test:market": "node --experimental-strip-types scripts/market-reducer-check.ts && node --experimental-strip-types scripts/market-db-flag-check.ts",
     "typecheck": "cd apps/makan-hour && npx tsc --noEmit"
   },
   "devDependencies": {

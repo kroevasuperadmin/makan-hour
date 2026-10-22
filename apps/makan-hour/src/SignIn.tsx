@@ -3,7 +3,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Button, color, font, Gap, Icon, IconName, radius, Row, space, T } from '@makan/ui';
-import { authAvailable, claimMarket, createOffice, looksLikeEmail, MarketMembership, Membership, myMemberships, NotSetUp, Role, signedInEmail, signInPassword, signOutReal, signUpPassword } from '@makan/core';
+import { authAvailable, claimMarket, createOffice, isMarketDoor, looksLikeEmail, MarketMembership, marketplaceDbOn, Membership, myMemberships, NotSetUp, pickMarketDoor, Role, signedInEmail, signInPassword, signOutReal, signUpPassword } from '@makan/core';
 import { Account, ACCOUNTS, accountTestId, corporateFlowOn, DEMO_CODE, MARKET_ACCOUNTS, OFFICE_ACCOUNTS } from './accounts';
 import { Wordmark } from './Wordmark';
 import { appleAvailable, nativeApple, Provider, PROVIDER_NAME, returnUrl, signInWith, stash, webReturnError } from './oauth';
@@ -84,10 +84,11 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
     const all = await myMemberships();
     const ms = p ? all.filter(m => m.role === p.role) : all;
     if (ms.length === 0) {
-      if (!p) {
+      if (!p && marketplaceDbOn()) {
         try {
           const market = await claimMarket();
-          if (market[0]) { onSignedIn(toMarket(market[0], who)); return; }
+          const first = market.find(row => isMarketDoor(row.role));
+          if (first) { onSignedIn(toMarket(first, who)); return; }
         } catch (e) { if (!(e instanceof NotSetUp)) throw e; }
       }
       await signOutReal();
@@ -144,6 +145,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
   const openMarket = (id: string) => { setDoor(id === 'market-admin' ? 'admin' : id as MarketDoor); setEmail(''); setPassword(''); setErr(null); setStep('market'); };
   const signInMarket = () => {
     if (!door) return;
+    if (!marketplaceDbOn()) { setErr('The marketplace database is switched off. Use a demo account on the previous screen.'); return; }
     if (!looksLikeEmail(email)) { setErr('Enter a full email, like name@company.my.'); return; }
     if (ACCOUNTS.some(a => a.email === email.trim().toLowerCase())) { setErr('That’s a device preview. Tap it in the list on the role screen.'); return; }
     if (!password) { setErr('Enter your password.'); return; }
@@ -151,7 +153,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
       await signInPassword(email, password);
       let rows: MarketMembership[] = [];
       try { rows = await claimMarket(); } catch (e) { await signOutReal(); throw e; }
-      const m = rows.find(r => r.role === door);
+      const m = pickMarketDoor(rows, door);
       if (!m) {
         await signOutReal();
         const other = rows[0];
@@ -186,7 +188,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
             {backLink('Change role', toRoles, 'market-back')}
             <T v="h1">{door === 'admin' ? 'Admin' : door[0].toUpperCase() + door.slice(1)} sign-in</T>
             <Gap h={space.s} />
-            <T v="body">Use the email set up for this side. Payment later is Stripe, by FPX or card.</T>
+            <T v="body">{marketplaceDbOn() ? 'Use the email set up for this side. Payment later is Stripe, by FPX or card.' : 'This door does not save anything yet. Use a demo account on the previous screen. The preview stays on this device.'}</T>
             <Gap h={space.xl} />
             <T v="label">Email</T><Gap h={space.s} />
             <TextInput testID="market-email" value={email} onChangeText={t => { setEmail(t); setErr(null); }} placeholder="name@company.my" placeholderTextColor={color.faint} autoCapitalize="none" keyboardType="email-address" autoComplete="email" style={input} />
@@ -195,7 +197,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
             <TextInput testID="market-password" value={password} onChangeText={t => { setPassword(t); setErr(null); }} secureTextEntry autoCapitalize="none" autoComplete="current-password" style={input} onSubmitEditing={signInMarket} />
             {errLine}
             <Gap h={space.m} />
-            <Button testID="market-signin" label={busy ? 'Checking…' : 'Sign in'} onPress={signInMarket} disabled={busy || !email.includes('@') || !password} />
+            <Button testID="market-signin" label={busy ? 'Checking…' : 'Sign in'} onPress={signInMarket} disabled={busy || !marketplaceDbOn() || !email.includes('@') || !password} />
           </> : step === 'pick' ? <>
             <T v="h1">Which office?</T><Gap h={space.s} />
             <T v="body">{picks.email} is on more than one team.</T><Gap h={space.xl} />

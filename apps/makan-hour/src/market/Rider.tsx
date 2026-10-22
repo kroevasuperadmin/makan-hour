@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView } from 'react-native';
-import { useMarket } from '@makan/core';
+import { ordersVisibleTo, useMarket } from '@makan/core';
 import { Button, Gap, Screen, space, T } from '@makan/ui';
 import { Account } from '../accounts';
 import { OrderBlock } from './OrderBlock';
@@ -8,9 +8,10 @@ import { OrderBlock } from './OrderBlock';
 export default function Rider({ account }: { account: Account }) {
   const { s, dispatch } = useMarket();
   const nameOf = (id: string) => s.restaurants.find(r => r.id === id)?.name;
-  const ready = s.orders.filter(o => o.status === 'ready' && !o.riderId).slice().sort((a, b) => a.placedAt - b.placedAt);
-  const mine = s.orders.filter(o => o.riderId === account.actorId && o.status === 'picked_up');
-  const done = s.orders.filter(o => o.riderId === account.actorId && o.status === 'delivered');
+  const visible = ordersVisibleTo('rider', account.actorId ?? '', null, s.orders);
+  const ready = visible.filter(o => o.status === 'ready' && !o.riderId).slice().sort((a, b) => a.placedAt - b.placedAt);
+  const mine = visible.filter(o => o.riderId === account.actorId && o.status === 'picked_up');
+  const done = visible.filter(o => o.riderId === account.actorId && o.status === 'delivered');
   return (
     <ScrollView style={{ flex: 1 }}>
       <Screen>

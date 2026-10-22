@@ -4,5 +4,6 @@ export * from './store';
 export * from './pay';
 export * from './auth';
 export * from './market';
+export * from './market-flag';
 export * from './market-db';
 export * from './market-store';
