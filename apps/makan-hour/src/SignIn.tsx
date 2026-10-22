@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { Button, color, font, Gap, Icon, IconName, radius, Row, space, T } from '@makan/ui';
+import { Button, color, fieldStyle, font, Gap, IconName, radius, Row, space, T, useReducedMotion } from '@makan/ui';
 import { authAvailable, claimMarket, createOffice, looksLikeEmail, MarketMembership, Membership, myMemberships, NotSetUp, Role, signedInEmail, signInPassword, signOutReal, signUpPassword } from '@makan/core';
 import { Account, ACCOUNTS, accountTestId, corporateFlowOn, DEMO_CODE, MARKET_ACCOUNTS, OFFICE_ACCOUNTS } from './accounts';
 import { Wordmark } from './Wordmark';
@@ -43,6 +43,38 @@ const toAccount = (m: Membership, email: string): Account => ({
   detail: `${ROLE_WORD[m.role]} · ${m.company}`,
 });
 const NOT_READY = 'Sign-in for real offices isn’t open yet. Until it is, use one of the demo accounts.';
+const STAIR = require('../assets/photos/stair.jpg');
+
+function Masthead() {
+  const reduced = useReducedMotion();
+  const open = React.useRef(new Animated.Value(reduced ? 1 : 0.04)).current;
+  const zoom = React.useRef(new Animated.Value(reduced ? 1 : 1.12)).current;
+  React.useEffect(() => {
+    if (reduced) { open.setValue(1); zoom.setValue(1); return; }
+    const ease = Easing.bezier(0.23, 1, 0.32, 1);
+    Animated.parallel([
+      Animated.timing(open, { toValue: 1, duration: 700, easing: ease, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(zoom, { toValue: 1, duration: 900, easing: ease, useNativeDriver: Platform.OS !== 'web' }),
+    ]).start();
+  }, [reduced, open, zoom]);
+  return (
+    <View style={{ marginHorizontal: -space.xl }}>
+      <Animated.View style={{ height: 168, overflow: 'hidden', transformOrigin: 'left center', transform: [{ scaleX: open }] }}>
+        <Animated.Image source={STAIR} accessibilityLabel="A white stair seen through a narrow opening. Photograph by Todd Quackenbush." style={{ width: '100%', height: 168, transform: [{ scale: zoom }] }} />
+      </Animated.View>
+      <T v="small" style={{ marginTop: space.s, paddingHorizontal: space.xl }}>Photograph by Todd Quackenbush.</T>
+    </View>
+  );
+}
+
+function Door({ id, title, line, onPress }: { id: string; title: string; line: string; onPress: () => void }) {
+  return (
+    <Pressable testID={id} onPress={onPress} accessibilityRole="button" style={({ pressed }) => ({ backgroundColor: pressed ? color.sunk : color.surface, paddingVertical: 18, paddingHorizontal: space.l, marginBottom: space.s, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+      <T style={{ fontFamily: font.display, fontSize: 26, lineHeight: 30, letterSpacing: -0.6, color: color.ink }}>{title}</T>
+      <T v="body" style={{ marginTop: 2 }}>{line}</T>
+    </Pressable>
+  );
+}
 type MarketDoor = 'customer' | 'vendor' | 'rider' | 'admin';
 const toMarket = (m: MarketMembership, email: string): Account => ({
   role: m.role, surface: 'market', real: true, email, actorId: m.memberId, restaurantId: m.restaurantId || undefined,
@@ -163,7 +195,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
   const toRoles = () => { setStep('role'); setRole(null); setErr(null); setPassword(''); };
   const startDemo = (a: Account) => { setDemo(a); setCode(''); setErr(null); setStep('demo'); };
 
-  const input = { borderWidth: 1, borderColor: color.line, borderRadius: radius.s, paddingHorizontal: space.l, paddingVertical: space.m, fontFamily: font.body, fontSize: 17, color: color.ink, backgroundColor: color.surface } as const;
+  const input = fieldStyle();
   const link = { color: color.ink, fontFamily: font.bodyStrong, textDecorationLine: 'underline' } as const;
   const errLine = err && <T v="small" testID="signin-error" style={{ color: color.danger, marginTop: space.s }}>{err}</T>;
   const backLink = (label: string, onPress: () => void, id: string) => <><Pressable testID={id} onPress={onPress} hitSlop={10}><T v="small" style={link}>{label}</T></Pressable><Gap h={space.xl} /></>;
@@ -174,7 +206,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
         : <Button testID={`oauth-${p}`} kind={p === list[0] ? 'primary' : 'secondary'} label={`Continue with ${PROVIDER_NAME[p]}`} onPress={() => provider(p)} disabled={busy} />}
     </View>
   ));
-  const rule = (label: string) => <Row style={{ gap: space.s }}><View style={{ flex: 1, height: 1, backgroundColor: color.line }} /><T v="label">{label}</T><View style={{ flex: 1, height: 1, backgroundColor: color.line }} /></Row>;
+  const rule = (label: string) => <T v="h2" style={{ fontFamily: font.display, fontSize: 22, lineHeight: 26, letterSpacing: -0.4 }}>{label}</T>;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: color.canvas }}>
@@ -200,7 +232,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
             <T v="h1">Which office?</T><Gap h={space.s} />
             <T v="body">{picks.email} is on more than one team.</T><Gap h={space.xl} />
             {picks.ms.map(m => (
-              <Pressable key={m.memberId} onPress={() => onSignedIn(toAccount(m, picks.email))} style={{ borderWidth: 1, borderColor: color.line, borderRadius: radius.m, padding: space.l, marginBottom: space.s, backgroundColor: color.surface }}>
+              <Pressable key={m.memberId} onPress={() => onSignedIn(toAccount(m, picks.email))} style={{ backgroundColor: color.surface, borderRadius: radius.s, padding: space.l, marginBottom: space.s }}>
                 <T v="h2" style={{ fontSize: 16 }}>{m.company}</T><T v="small">{ROLE_WORD[m.role]}</T>
               </Pressable>
             ))}
@@ -213,11 +245,11 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
             <T v="h1">Demo: {demo.name.split(' ')[0]}</T><Gap h={space.s} />
             <T v="body">{demo.detail}. {demo.surface === 'market' ? 'This preview stays on this device. It does not charge a card or write to the database.' : 'Nothing here touches a real office.'}</T>
             <Gap h={space.l} />
-            <View style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: color.warn, backgroundColor: color.warnSoft, borderRadius: radius.s, padding: space.m }}>
+            <View style={{ backgroundColor: color.warnSoft, borderRadius: radius.s, padding: space.m }}>
               <T v="small" style={{ color: color.warn }}>The demo code is <T v="small" style={{ color: color.warn, fontFamily: font.bodyStrong }}>{DEMO_CODE}</T>.</T>
             </View>
             <Gap h={space.xl} />
-            <TextInput testID="code-input" value={code} onChangeText={t => { setCode(t.replace(/\D/g, '').slice(0, 6)); setErr(null); }} placeholder="000000" placeholderTextColor={color.faint} keyboardType="number-pad" maxLength={6} style={[input, { fontFamily: font.mono, fontSize: 28, letterSpacing: 8, textAlign: 'center' }]} onSubmitEditing={verifyDemo} />
+            <TextInput testID="code-input" value={code} onChangeText={t => { setCode(t.replace(/\D/g, '').slice(0, 6)); setErr(null); }} placeholder="000000" placeholderTextColor={color.faint} keyboardType="number-pad" maxLength={6} style={[input, { fontFamily: font.bodyStrong, fontSize: 28, letterSpacing: 8, textAlign: 'center' }]} onSubmitEditing={verifyDemo} />
             {errLine}
             <Gap h={space.m} />
             <Button testID="fill-code" kind="secondary" label="Paste demo code" onPress={() => { setCode(DEMO_CODE); setErr(null); }} />
@@ -246,7 +278,7 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
             <Gap h={space.xl} />
             {providerButtons(OPTIONS[role].providers)}
             {OPTIONS[role].password && <>
-              <Gap h={space.l} />{rule('Or with a password')}<Gap h={space.l} />
+              <Gap h={space.l} /><T v="body">Or use a password.</T><Gap h={space.l} />
               <T v="label">Email</T><Gap h={space.s} />
               <TextInput testID="email-input" value={email} onChangeText={t => { setEmail(t); setErr(null); }} placeholder="name@company.my" placeholderTextColor={color.faint} autoCapitalize="none" keyboardType="email-address" autoComplete="email" textContentType="username" style={input} />
               <Gap h={space.l} />
@@ -267,31 +299,21 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
               </Pressable>
             </>}
           </> : <>
-            <T v="hero">Customers order. Vendors cook. Riders deliver.</T>
+            <Masthead />
+            <Gap h={space.l} />
+            <T v="hero">Who’s signing in?</T>
             <Gap h={space.m} />
-            <T v="body">Sign in with the email for your side. Device previews stay on this phone and are listed below.</T>
+            <T v="body">Customers, kitchens and riders each use their own email. Device previews are listed below.</T>
             <Gap h={space.xl} />
             {MARKET_DOORS.map(c => (
-              <Pressable key={c.id} testID={`role-${c.id}`} onPress={() => openMarket(c.id)} style={({ pressed }) => ({ borderWidth: 1, borderColor: color.line, borderRadius: radius.m, padding: space.l, marginBottom: space.s, backgroundColor: color.surface, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
-                <Row style={{ gap: space.m }}>
-                  <Icon name={c.icon} size={20} c={color.ink} />
-                  <View style={{ flex: 1 }}><T v="h2" style={{ fontSize: 17 }}>{c.title}</T><T v="small">{c.line}</T></View>
-                  <Icon name="chevron" size={16} c={color.faint} />
-                </Row>
-              </Pressable>
+              <Door key={c.id} id={`role-${c.id}`} title={c.title} line={c.line} onPress={() => openMarket(c.id)} />
             ))}
             {corporateFlowOn && <>
               <Gap h={space.l} />
-              <T v="label">Office lunch</T>
+              <T v="h2" style={{ fontFamily: font.display, fontSize: 22, lineHeight: 26, letterSpacing: -0.4 }}>Office lunch</T>
               <Gap h={space.s} />
               {CHOICES.map(c => (
-                <Pressable key={c.role} testID={`role-${c.role}`} onPress={() => pickRole(c.role)} style={({ pressed }) => ({ borderWidth: 1, borderColor: color.line, borderRadius: radius.m, padding: space.l, marginBottom: space.s, backgroundColor: color.surface, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
-                  <Row style={{ gap: space.m }}>
-                    <Icon name={c.icon} size={20} c={color.ink} />
-                    <View style={{ flex: 1 }}><T v="h2" style={{ fontSize: 17 }}>{c.title}</T><T v="small">{c.line}</T></View>
-                    <Icon name="chevron" size={16} c={color.faint} />
-                  </Row>
-                </Pressable>
+                <Door key={c.role} id={`role-${c.role}`} title={c.title} line={c.line} onPress={() => pickRole(c.role)} />
               ))}
             </>}
             {errLine}
@@ -299,13 +321,13 @@ export default function SignIn({ onSignedIn }: { onSignedIn: (a: Account) => voi
             {rule('Demo accounts')}
             <Gap h={space.l} />
             {[...MARKET_ACCOUNTS, ...(corporateFlowOn ? OFFICE_ACCOUNTS : [])].map(a => (
-              <Pressable key={a.email} testID={accountTestId(a)} onPress={() => startDemo(a)} style={({ pressed }) => ({ paddingVertical: space.m, borderBottomWidth: 1, borderBottomColor: color.line, transform: [{ scale: pressed ? 0.99 : 1 }] })}>
+              <Pressable key={a.email} testID={accountTestId(a)} onPress={() => startDemo(a)} style={({ pressed }) => ({ paddingVertical: space.m, backgroundColor: pressed ? color.sunk : 'transparent', transform: [{ scale: pressed ? 0.98 : 1 }] })}>
                 <Row style={{ gap: space.m }}>
                   <View style={{ flex: 1 }}>
-                    <T v="body" style={{ color: color.ink, fontFamily: font.bodyStrong }}>{a.name}</T>
+                    <T v="body" style={{ fontFamily: font.bodyStrong }}>{a.name}</T>
                     <T v="small" numberOfLines={1}>{a.detail}</T>
                   </View>
-                  <T v="small" style={{ fontFamily: font.mono, fontSize: 13, color: color.faint }}>{roleLabel(a)}</T>
+                  <T v="small">{roleLabel(a)}</T>
                 </Row>
               </Pressable>
             ))}

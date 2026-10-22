@@ -84,7 +84,7 @@ function Today() {
               <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: color.sunk, alignItems: 'center', justifyContent: 'center' }}><T v="small" style={{ color: color.ink2, fontFamily: font.bodyStrong }}>{e.name.split(' ').map(x => x[0]).join('').slice(0, 2)}</T></View>
               <View style={{ flex: 1 }}><T v="body" style={{ color: color.ink, fontFamily: font.semi }}>{e.name}</T><T v="small">{e.floor} · {e.desk}</T></View>
               {s.cutoffPassed ? <Badge label="Missed" /> : s.nudged.includes(e.id) ? <Badge label="Reminded" tone="accent" /> :
-                <Pressable testID={`nudge-${e.id}`} onPress={() => dispatch({ t: 'nudge', ids: [e.id] })} style={{ borderWidth: 1, borderColor: color.line, borderRadius: radius.s, paddingHorizontal: space.m, paddingVertical: space.s }}>
+                <Pressable testID={`nudge-${e.id}`} onPress={() => dispatch({ t: 'nudge', ids: [e.id] })} style={{ backgroundColor: color.sunk, borderRadius: radius.s, paddingHorizontal: space.m, minHeight: 44, justifyContent: 'center' }}>
                   <Row style={{ gap: space.xs }}><Icon name="bell" size={14} /><T v="small" style={{ color: color.ink, fontFamily: font.bodyStrong }}>Nudge</T></Row>
                 </Pressable>}
             </Row>
@@ -112,7 +112,7 @@ function Invoice() {
   const total = inv.lines.reduce((a, l) => a + l.amountSen, 0);
   if (step === 'bank' || step === 'approve') return (
     <>
-      <View testID="sandbox-banner" style={{ borderWidth: 2, borderColor: color.warn, borderStyle: 'dashed', borderRadius: radius.m, padding: space.m, backgroundColor: color.warnSoft }}>
+      <View testID="sandbox-banner" style={{ padding: space.m, backgroundColor: color.warnSoft }}>
         <Row style={{ gap: space.s }}><Icon name="alert" size={18} c={color.warn} /><T v="h2" style={{ color: color.warn }}>Payment sandbox · no real money</T></Row>
         <T v="small" style={{ color: color.warn }}>A mock of an FPX B2B (corporate internet banking) flow. No bank is contacted, and the bank names are made up.</T>
       </View>
@@ -124,8 +124,8 @@ function Invoice() {
       {step === 'bank' ? <>
         <T v="label">Choose your bank</T><Gap h={space.s} />
         {banks.map(b => (
-          <Pressable key={b} testID={`bank-${banks.indexOf(b)}`} onPress={() => setBank(b)} style={{ borderWidth: bank === b ? 2 : 1, borderColor: bank === b ? color.ink : color.line, borderRadius: radius.m, padding: bank === b ? space.l - 1 : space.l, marginBottom: space.s, backgroundColor: color.surface }}>
-            <Row style={{ gap: space.m }}><Icon name="building" size={18} /><T v="body" style={{ flex: 1, color: color.ink, fontFamily: font.semi }}>{b}</T>{bank === b && <Icon name="check" size={18} />}</Row>
+          <Pressable key={b} testID={`bank-${banks.indexOf(b)}`} onPress={() => setBank(b)} style={{ padding: space.l, marginBottom: space.s, backgroundColor: bank === b ? color.ink : color.surface }}>
+            <Row style={{ gap: space.m }}><Icon name="building" size={18} c={bank === b ? color.onInk : color.ink} /><T v="body" style={{ flex: 1, color: bank === b ? color.onInk : color.ink, fontFamily: font.semi }}>{b}</T>{bank === b && <Icon name="check" size={18} c={color.onInk} />}</Row>
           </Pressable>
         ))}
         <Gap h={space.l} />
@@ -153,10 +153,10 @@ function Invoice() {
       {inv.status === 'paid' && <><View testID="paid-panel" style={{ backgroundColor: color.accent, borderRadius: radius.m, padding: space.xl }}>
         <Row style={{ gap: space.s }}><Icon name="check" size={18} c={color.onAccent} w={2.5} /><T v="label" style={{ color: color.onAccentMuted }}>Paid · sandbox</T></Row>
         <Gap h={space.s} /><T v="hero" style={{ color: color.onAccent }}>{rm(total)} settled.</T>
-        <Gap h={space.s} /><T v="small" style={{ color: color.onAccent, opacity: 0.85 }}>{inv.paidVia}</T><T v="small" style={{ color: color.onAccent, opacity: 0.85, fontFamily: font.mono }}>Ref {inv.paidRef}</T>
+        <Gap h={space.s} /><T v="small" style={{ color: color.onAccent, opacity: 0.85 }}>{inv.paidVia}</T><T v="num" style={{ color: color.onAccent, fontSize: 13 }}>Ref {inv.paidRef}</T>
       </View><Gap h={space.xl} /></>}
       <Card>
-        <Row style={{ justifyContent: 'space-between' }}><T v="small" style={{ fontFamily: font.mono }}>{inv.id}</T><Badge label={inv.status === 'paid' ? 'Paid' : `Due ${inv.dueOn}`} tone={inv.status === 'paid' ? 'accent' : 'warn'} /></Row>
+        <Row style={{ justifyContent: 'space-between' }}><T v="num" style={{ fontSize: 13 }}>{inv.id}</T><Badge label={inv.status === 'paid' ? 'Paid' : `Due ${inv.dueOn}`} tone={inv.status === 'paid' ? 'accent' : 'warn'} /></Row>
         <Gap h={space.l} />
         {inv.lines.map(l => (
           <View key={l.label} style={{ marginBottom: space.m }}>

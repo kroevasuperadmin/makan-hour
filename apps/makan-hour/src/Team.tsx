@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { getAdminDomain, inviteMember, listMembers, setAdminDomain, looksLikeEmail, Member, NotSetUp, removeMember, Role, setMemberRole } from '@makan/core';
-import { Badge, Button, Card, color, Divider, font, Gap, radius, Row, Segmented, space, T } from '@makan/ui';
+import { Badge, Button, Card, color, Divider, fieldStyle, font, Gap, radius, Row, Segmented, space, T } from '@makan/ui';
 import { Account } from './accounts';
 
 const ROLES: { key: Role; label: string }[] = [{ key: 'employee', label: 'Staff' }, { key: 'caterer', label: 'Caterer' }, { key: 'admin', label: 'Admin' }];
@@ -40,7 +40,7 @@ export default function Team({ account }: { account: Account }) {
     act(async () => { await inviteMember(officeId, e, role, name); setEmail(''); setName(''); },
       `${e} added as ${word(role).toLowerCase()}. They sign in as ${word(role).toLowerCase()} with Google, Microsoft or a password on that address.`);
   };
-  const input = { borderWidth: 1, borderColor: color.line, borderRadius: radius.s, paddingHorizontal: space.m, paddingVertical: space.m, fontFamily: font.body, fontSize: 15, color: color.ink, backgroundColor: color.surface } as const;
+  const input = fieldStyle();
   return (
     <View style={{ paddingHorizontal: space.xl, paddingBottom: space.xxxl }}>
       <T v="label">{account.org}</T><Gap h={space.s} />
@@ -83,7 +83,7 @@ export default function Team({ account }: { account: Account }) {
                 {self ? <Badge label="You · admin" tone="accent" /> : <>
                   <Pressable accessibilityRole="button" accessibilityLabel={`Change role for ${m.email}`} disabled={busy}
                     onPress={() => { const next = ROLES[(ROLES.findIndex(r => r.key === m.role) + 1) % ROLES.length].key; act(() => setMemberRole(m.id, next), `${m.email} is now ${word(next).toLowerCase()}.`); }}
-                    style={{ borderWidth: 1, borderColor: color.line, borderRadius: radius.s, paddingHorizontal: space.m, paddingVertical: space.s }}>
+                    style={{ backgroundColor: color.sunk, borderRadius: 4, paddingHorizontal: space.m, minHeight: 44, justifyContent: 'center' }}>
                     <T v="small" style={{ color: color.ink, fontFamily: font.bodyStrong }}>{word(m.role)} ▾</T>
                   </Pressable>
                   <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${m.email}`} disabled={busy} hitSlop={8} onPress={() => act(() => removeMember(m.id), `${m.email} removed.`)}>

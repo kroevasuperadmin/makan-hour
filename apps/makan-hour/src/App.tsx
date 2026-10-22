@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -12,13 +12,13 @@ import { Account } from './accounts';
 // Office lunch keeps its three shells. The marketplace preview (customer, vendor, rider, admin)
 // is a separate surface with its own in-memory store.
 const THEMES = {
-  signin: { p: employeePalette, f: employeeFonts, hero: 40, frame: '#E7E3DA', max: 440 },
-  employee: { p: employeePalette, f: employeeFonts, hero: 40, frame: '#E7E3DA', max: 440 },
-  customer: { p: employeePalette, f: employeeFonts, hero: 40, frame: '#E7E3DA', max: 440 },
-  admin: { p: adminPalette, f: adminFonts, hero: 34, frame: '#DADDD7', max: 1100 },
-  caterer: { p: kitchenPalette, f: kitchenFonts, hero: 60, frame: '#0B0B0A', max: 820 },
-  vendor: { p: kitchenPalette, f: kitchenFonts, hero: 48, frame: '#0B0B0A', max: 820 },
-  rider: { p: riderPalette, f: employeeFonts, hero: 40, frame: '#E6D9C8', max: 440 },
+  signin: { p: employeePalette, f: employeeFonts, hero: 44, frame: '#E4DDD0', max: 440 },
+  employee: { p: employeePalette, f: employeeFonts, hero: 44, frame: '#E4DDD0', max: 440 },
+  customer: { p: employeePalette, f: employeeFonts, hero: 44, frame: '#E4DDD0', max: 440 },
+  admin: { p: adminPalette, f: adminFonts, hero: 40, frame: '#D9DCD6', max: 1100 },
+  caterer: { p: kitchenPalette, f: kitchenFonts, hero: 56, frame: '#0C0B0A', max: 820 },
+  vendor: { p: kitchenPalette, f: kitchenFonts, hero: 48, frame: '#0C0B0A', max: 820 },
+  rider: { p: riderPalette, f: employeeFonts, hero: 44, frame: '#E4DDD0', max: 440 },
 } as const;
 type ThemeKey = keyof typeof THEMES;
 
@@ -34,6 +34,40 @@ function themeKey(account: Account | null): ThemeKey {
   return 'employee';
 }
 
+function useWebChrome(canvas: string) {
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    let style = document.getElementById('makan-chrome') as HTMLStyleElement | null;
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'makan-chrome';
+      document.head.appendChild(style);
+    }
+    style.textContent = `
+      html { -webkit-tap-highlight-color: transparent; }
+      body { overscroll-behavior: none; background: ${canvas}; }
+      input, textarea { font-size: 16px; }
+      [role="button"], button { -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+      [role="button"]:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
+        outline: 2px solid #1A1814; outline-offset: 2px;
+      }
+      body::after {
+        content: "";
+        position: fixed; inset: 0; pointer-events: none; z-index: 40; opacity: 0.045;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+        mix-blend-mode: multiply;
+      }
+    `;
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', canvas);
+  }, [canvas]);
+}
+
 export default function App() {
   const [loaded] = useFonts({
     InstrumentSerif_400Regular: require('../assets/fonts/InstrumentSerif_400Regular.ttf'),
@@ -43,13 +77,13 @@ export default function App() {
     IBMPlexSans_400Regular: require('../assets/fonts/IBMPlexSans_400Regular.ttf'),
     IBMPlexSans_500Medium: require('../assets/fonts/IBMPlexSans_500Medium.ttf'),
     IBMPlexSans_600SemiBold: require('../assets/fonts/IBMPlexSans_600SemiBold.ttf'),
-    IBMPlexMono_500Medium: require('../assets/fonts/IBMPlexMono_500Medium.ttf'),
     BarlowCondensed_600SemiBold: require('../assets/fonts/BarlowCondensed_600SemiBold.ttf'),
   });
   const [account, setAccount] = useState<Account | null>(null);
   const key = themeKey(account);
   const th = THEMES[key];
   applyTheme(th.p, th.f, th.hero); // synchronous, before this render's children read the tokens
+  useWebChrome(th.p.canvas);
   if (!loaded) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: color.canvas }}><ActivityIndicator color={color.ink} /></View>;
   setRealPayments(!!account?.real);
   const out = () => { if (account?.real) signOutReal(); setAccount(null); };

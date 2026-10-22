@@ -29,7 +29,7 @@ export function MarketShell({ account, onSignOut }: { account: Account; onSignOu
   return (
     <SafeAreaView testID={`market-shell-${account.role === 'admin' ? 'admin' : account.role}`} style={{ flex: 1, backgroundColor: admin ? color.ink : color.canvas }} edges={['top', 'bottom']}>
       <StatusBar style={admin ? 'light' : 'dark'} />
-      <View style={{ paddingHorizontal: space.xl, paddingVertical: space.m, borderBottomWidth: admin ? 0 : 1, borderBottomColor: color.line, backgroundColor: admin ? color.ink : color.canvas }}>
+      <View style={{ paddingHorizontal: space.xl, paddingTop: space.m, paddingBottom: space.l, backgroundColor: admin ? color.ink : color.canvas }}>
         <Row style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <View style={{ flex: 1 }}>
             <Wordmark role={word} tone={admin ? 'light' : 'dark'} roleFont={font.bodyStrong} />

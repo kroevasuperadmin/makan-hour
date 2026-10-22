@@ -18,7 +18,7 @@ export default function Vendor({ account }: { account: Account }) {
       <ScrollView style={{ flex: 1 }}>
         {tab === 'menu' ? <Menu restaurantId={restaurant.id} vendorId={account.actorId ?? ''} /> : (
           <Screen>
-            <T v="hero" style={{ fontSize: 36 }}>{restaurant.name}</T>
+            <T v="hero" numberOfLines={2}>{restaurant.name}</T>
             <Gap h={space.s} />
             <T v="body">Only your orders. Accept one, then mark it preparing, then ready for a rider.</T>
             <Gap h={space.xl} />
@@ -48,7 +48,7 @@ function Menu({ restaurantId, vendorId }: { restaurantId: string; vendorId: stri
   const items = s.items.filter(i => i.restaurantId === restaurantId);
   return (
     <Screen>
-      <T v="hero" style={{ fontSize: 36 }}>Menu</T>
+      <T v="hero">Menu</T>
       <Gap h={space.s} />
       <T v="body">Customers only see dishes you leave available. This switch stays on this device.</T>
       <Gap h={space.xl} />

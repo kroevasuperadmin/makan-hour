@@ -1,5 +1,6 @@
 import React from 'react';
-import { ScrollView } from 'react-native';
+import { Platform, ScrollView } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useMarket } from '@makan/core';
 import { Button, Gap, Screen, space, T } from '@makan/ui';
 import { Account } from '../accounts';
@@ -14,7 +15,7 @@ export default function Rider({ account }: { account: Account }) {
   return (
     <ScrollView style={{ flex: 1 }}>
       <Screen>
-        <T v="hero" style={{ fontSize: 36 }}>Jobs</T>
+        <T v="hero">Jobs</T>
         <Gap h={space.s} />
         <T v="body">{account.name}, pick up a ready order, then mark it delivered.</T>
         <Gap h={space.xl} />
@@ -34,7 +35,7 @@ export default function Rider({ account }: { account: Account }) {
         {mine.map(o => (
           <OrderBlock key={o.id} order={o} restaurant={nameOf(o.restaurantId)}>
             <Gap h={space.m} />
-            <Button testID={`market-deliver-${o.id}`} label="Mark delivered" onPress={() => dispatch({ t: 'deliver', orderId: o.id, riderId: account.actorId ?? '' })} />
+            <Button testID={`market-deliver-${o.id}`} label="Mark delivered" onPress={() => { dispatch({ t: 'deliver', orderId: o.id, riderId: account.actorId ?? '' }); if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); }} />
           </OrderBlock>
         ))}
         {!!done.length && <>

@@ -3,7 +3,7 @@ import { Pressable, TextInput, View } from 'react-native';
 import { ALLOWANCE_SEN, CUTOFF, dish, hhmm, me, myOrder, rm, topUpSen, useStore } from '@makan/core';
 import PayButton from '../PayButton';
 import { askPermission, useAlertOnChange, useRegisterPush } from '../notify';
-import { Badge, Button, Card, color, Divider, font, Gap, Icon, radius, Row, Screen, space, T } from '@makan/ui';
+import { Badge, Button, Card, color, Divider, fieldStyle, font, Gap, Icon, radius, Row, Screen, space, T } from '@makan/ui';
 
 function Countdown() {
   const { s } = useStore();
@@ -50,7 +50,7 @@ function SpotCard() {
     </Card>
   );
 }
-const inp = () => ({ borderWidth: 1, borderColor: color.line, borderRadius: radius.s, padding: space.m, fontFamily: font.body, fontSize: 15, color: color.ink, backgroundColor: color.canvas } as const);
+const inp = () => fieldStyle();
 
 function ConfirmedPanel() {
   const { s, dispatch } = useStore();
@@ -61,7 +61,7 @@ function ConfirmedPanel() {
     <View testID="delivered-panel" style={{ backgroundColor: color.accent, borderRadius: radius.m, padding: space.xl }}>
       <Row style={{ gap: space.s }}><Icon name="check" size={18} c={color.onAccent} w={2.5} /><T v="label" style={{ color: color.onAccentMuted }}>Delivered {hhmm(drop.deliveredAt!)}</T></Row>
       <Gap h={space.m} />
-      <T v="hero" style={{ color: color.onAccent }}>Lunch is at {s.offices.find(x => x.id === u.officeId)!.dropSpot}.</T>
+      <T v="hero" numberOfLines={2} style={{ color: color.onAccent, fontSize: 34, lineHeight: 36 }}>Lunch is at {s.offices.find(x => x.id === u.officeId)!.dropSpot}.</T>
       <Gap h={space.m} />
       <T v="body" style={{ color: color.onAccent, opacity: 0.85 }}>Look for the bag labelled “{u.name} · {d.name}”. Shelf {s.offices.find(x => x.id === u.officeId)!.dropCode}, slot 12.</T>
     </View>
@@ -73,7 +73,7 @@ function ConfirmedPanel() {
         <T v="label" style={{ color: color.onAccentMuted }}>Ordered · {s.cutoffPassed ? 'locked' : 'confirmed'}</T>
       </Row>
       <Gap h={space.l} />
-      <T v="hero" style={{ color: color.onAccent }}>You're in for lunch.</T>
+      <T v="hero" numberOfLines={2} style={{ color: color.onAccent, fontSize: 36, lineHeight: 38 }}>You're in for lunch.</T>
       <Gap h={space.m} />
       <T v="body" style={{ color: color.onAccent, fontFamily: font.bodyStrong }}>{d.name}</T>
       <T v="body" style={{ color: color.onAccent, opacity: 0.85 }}>To {u.floor}, {u.desk} · arrives {hhmm(eta)}{drop.delayMin ? ' (revised)' : ''}</T>
@@ -144,14 +144,14 @@ export default function Employee() {
           const c = s.caterers.find(x => x.id === d.catererId)!; const on = sel === d.id;
           const extra = topUpSen(d.priceSen); const blocked = extra > 0 && !s.topUpsAllowed;
           if (blocked) return (
-            <View key={d.id} testID={`dish-${d.id}-blocked`} style={{ borderWidth: 1, borderColor: color.line, borderRadius: radius.m, padding: space.l, marginBottom: space.m, opacity: 0.55 }}>
+            <View key={d.id} testID={`dish-${d.id}-blocked`} style={{ backgroundColor: color.sunk, padding: space.l, marginBottom: space.s, opacity: 0.7 }}>
               <Row style={{ justifyContent: 'space-between' }}><T v="h2">{d.name}</T><T v="num">{rm(d.priceSen)}</T></Row>
               <T v="small" style={{ marginTop: 2 }}>Over your {rm(ALLOWANCE_SEN)} allowance. Your office has top-ups switched off.</T>
             </View>
           );
           return (
             <Pressable key={d.id} testID={`dish-${d.id}`} onPress={() => setSel(d.id)} accessibilityRole="radio" accessibilityState={{ checked: on }}
-              style={{ borderWidth: on ? 2 : 1, borderColor: on ? color.ink : color.line, borderRadius: radius.m, padding: on ? space.l - 1 : space.l, backgroundColor: color.surface, marginBottom: space.m }}>
+              style={{ padding: space.l, backgroundColor: on ? color.accentSoft : color.surface, marginBottom: space.s, borderLeftWidth: on ? 4 : 0, borderLeftColor: color.accent }}>
               <Row style={{ alignItems: 'flex-start', gap: space.m }}>
                 <View style={{ flex: 1 }}>
                   <T v="h2">{d.name}</T>
@@ -165,7 +165,7 @@ export default function Employee() {
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: space.s }}>
                   <T v="num" style={{ fontFamily: font.bodyStrong }}>{rm(d.priceSen)}</T>
-                  <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: on ? color.ink : color.line, backgroundColor: on ? color.ink : 'transparent', alignItems: 'center', justifyContent: 'center' }}>{on && <Icon name="check" size={14} c={color.onInk} w={3} />}</View>
+                  <View style={{ width: 22, height: 22, borderRadius: 4, backgroundColor: on ? color.ink : color.sunk, alignItems: 'center', justifyContent: 'center' }}>{on && <Icon name="check" size={14} c={color.onInk} w={3} />}</View>
                 </View>
               </Row>
             </Pressable>

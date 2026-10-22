@@ -11,7 +11,8 @@
       "bundleIdentifier": "my.makanhour.app",
       "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CADisableMinimumFrameDurationOnPhone": true
       },
       "usesAppleSignIn": true
     },
@@ -46,7 +47,7 @@
       "expo-apple-authentication"
     ],
     "scheme": "makan-hour",
-    "backgroundColor": "#F5F3EE",
+    "backgroundColor": "#F3EFE6",
     "experiments": {
       "baseUrl": "/app"
     }

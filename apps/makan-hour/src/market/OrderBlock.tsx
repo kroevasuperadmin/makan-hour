@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { MarketOrder, orderTotalSen, rm, STATUS_LABEL, whenLabel } from '@makan/core';
-import { Badge, Card, Gap, space, T } from '@makan/ui';
+import { Badge, Card, Gap, space, StatusRail, T } from '@makan/ui';
 
 const tone = (status: MarketOrder['status']) => status === 'placed' || status === 'awaiting_payment' ? 'warn' as const : status === 'cancelled' ? 'danger' as const : status === 'accepted' || status === 'preparing' ? 'info' as const : 'accent' as const;
 
@@ -17,6 +17,7 @@ export function OrderBlock({ order, restaurant, children }: { order: MarketOrder
           <Badge label={STATUS_LABEL[order.status]} tone={tone(order.status)} />
         </View>
         <T testID={`market-status-${order.id}`} v="small" style={{ marginTop: space.s }}>{STATUS_LABEL[order.status]} · {whenLabel(order.placedAt)}</T>
+        <StatusRail status={order.status} />
         <Gap h={space.s} />
         {order.lines.map(l => <T key={l.itemId} v="body">{l.name} × {l.qty}</T>)}
         <Gap h={space.s} />

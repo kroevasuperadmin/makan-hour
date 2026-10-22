@@ -79,8 +79,8 @@ function Labels({ catererId }: { catererId: string }) {
         {mine.map((o, i) => {
           const e = s.employees.find(x => x.id === o.employeeId)!; const off = s.offices.find(x => x.id === o.officeId)!;
           return (
-            <View key={o.id} testID={i === 0 ? 'label-first' : undefined} style={{ width: '48.5%', borderWidth: 1, borderColor: e.id === 'me' ? color.warn : PAPER, borderRadius: radius.s, padding: space.m, backgroundColor: PAPER }}>
-              <Row style={{ justifyContent: 'space-between' }}><T v="label" style={{ color: INK }}>Drop {off.dropCode}</T><T v="small" style={{ fontFamily: font.mono, color: INK }}>{String(i + 1).padStart(3, '0')}</T></Row>
+            <View key={o.id} testID={i === 0 ? 'label-first' : undefined} style={{ width: '48.5%', padding: space.m, backgroundColor: PAPER, borderLeftWidth: e.id === 'me' ? 4 : 0, borderLeftColor: color.warn }}>
+              <Row style={{ justifyContent: 'space-between' }}><T v="small" style={{ color: INK, fontFamily: font.bodyStrong }}>Drop {off.dropCode}</T><T v="num" style={{ color: INK, fontSize: 13 }}>{i + 1}</T></Row>
               <Gap h={space.s} />
               <T v="h2" numberOfLines={1} style={{ color: INK }}>{e.name}</T>
               <T v="small" numberOfLines={1} style={{ color: '#4A4741' }}>{e.floor} · {e.desk}</T>
