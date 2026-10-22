@@ -61,6 +61,8 @@ Deploy: copy `apps/makan-hour/dist` and `apps/makan-hour/api` (payment and push 
 
 Sign in as the admin. Press and hold the "Makan Hour" wordmark for about 1.5 seconds, then tap *Reset the demo*. This clears the order, nudges, cutoff, drops and payment for everyone signed in, and sets the clock back to 9:18 am.
 
+From a terminal instead: `APP_URL=https://makanhour.rizqey.com/app npm run reset-demo` signs in as the demo admin and does the same reset. Without `APP_URL` it resets the build served at `http://localhost:8091/app`. Set `CHROMIUM_PATH` to use a Chromium that is already installed.
+
 ## 3-device demo script (about 5 minutes)
 
 Setup: three phones (or two phones and a laptop) all open the same app.
