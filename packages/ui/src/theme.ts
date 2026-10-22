@@ -14,6 +14,11 @@ export const adminPalette: Palette = {
   accent: '#2E5E45', accentSoft: '#E3EDE6', onAccent: '#FFFFFF', onAccentMuted: '#CDE0D3',
   warn: '#8A5300', warnSoft: '#F8EEDA', danger: '#9F2F2D', dangerSoft: '#F8E6E5', info: '#1F4E79', infoSoft: '#E2ECF5',
 };
+export const riderPalette: Palette = {
+  canvas: '#F6F1E8', surface: '#FFFFFF', sunk: '#EFE6D6', line: '#E4D8C4', ink: '#1C1915', ink2: '#3E3428', muted: '#7A6E5D', faint: '#A89880', onInk: '#FFFFFF',
+  accent: '#9A4B12', accentSoft: '#F8E6D4', onAccent: '#FFFFFF', onAccentMuted: '#F0D2B8',
+  warn: '#8A5300', warnSoft: '#FAEFD9', danger: '#9F2F2D', dangerSoft: '#FBE9E8', info: '#24577A', infoSoft: '#E4EEF5',
+};
 export const kitchenPalette: Palette = {
   canvas: '#121211', surface: '#1B1B1A', sunk: '#262624', line: '#302F2C', ink: '#F2EFE8', ink2: '#D3CFC6', muted: '#8F8B82', faint: '#66635D', onInk: '#121211',
   accent: '#86B897', accentSoft: '#1D2A21', onAccent: '#0F1A13', onAccentMuted: '#2C4434',

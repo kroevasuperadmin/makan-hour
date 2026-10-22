@@ -2,20 +2,37 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
-import { adminFonts, adminPalette, applyTheme, color, employeeFonts, employeePalette, kitchenFonts, kitchenPalette } from '@makan/ui';
-import { setRealPayments, signOutReal, StoreProvider } from '@makan/core';
+import { adminFonts, adminPalette, applyTheme, color, employeeFonts, employeePalette, kitchenFonts, kitchenPalette, riderPalette } from '@makan/ui';
+import { MarketProvider, setRealPayments, signOutReal, StoreProvider } from '@makan/core';
 import SignIn from './SignIn';
 import { AdminShell, EmployeeShell, KitchenShell } from './Shells';
+import { MarketShell } from './market/Shell';
 import { Account } from './accounts';
 
-// One app, three experiences. Each role gets its own palette, type and navigation;
-// the bowl mark and serif wordmark stay the same so it reads as one product.
+// Office lunch keeps its three shells. The marketplace preview (customer, vendor, rider, admin)
+// is a separate surface with its own in-memory store.
 const THEMES = {
   signin: { p: employeePalette, f: employeeFonts, hero: 40, frame: '#E7E3DA', max: 440 },
   employee: { p: employeePalette, f: employeeFonts, hero: 40, frame: '#E7E3DA', max: 440 },
+  customer: { p: employeePalette, f: employeeFonts, hero: 40, frame: '#E7E3DA', max: 440 },
   admin: { p: adminPalette, f: adminFonts, hero: 34, frame: '#DADDD7', max: 1100 },
   caterer: { p: kitchenPalette, f: kitchenFonts, hero: 60, frame: '#0B0B0A', max: 820 },
+  vendor: { p: kitchenPalette, f: kitchenFonts, hero: 48, frame: '#0B0B0A', max: 820 },
+  rider: { p: riderPalette, f: employeeFonts, hero: 40, frame: '#E6D9C8', max: 440 },
 } as const;
+type ThemeKey = keyof typeof THEMES;
+
+function themeKey(account: Account | null): ThemeKey {
+  if (!account) return 'signin';
+  if (account.surface === 'market') {
+    if (account.role === 'vendor') return 'vendor';
+    if (account.role === 'rider') return 'rider';
+    if (account.role === 'admin') return 'admin';
+    return 'customer';
+  }
+  if (account.role === 'admin' || account.role === 'caterer' || account.role === 'employee') return account.role;
+  return 'employee';
+}
 
 export default function App() {
   const [loaded] = useFonts({
@@ -30,7 +47,7 @@ export default function App() {
     BarlowCondensed_600SemiBold: require('../assets/fonts/BarlowCondensed_600SemiBold.ttf'),
   });
   const [account, setAccount] = useState<Account | null>(null);
-  const key = account ? account.role : 'signin';
+  const key = themeKey(account);
   const th = THEMES[key];
   applyTheme(th.p, th.f, th.hero); // synchronous, before this render's children read the tokens
   if (!loaded) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: color.canvas }}><ActivityIndicator color={color.ink} /></View>;
@@ -39,14 +56,17 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <StoreProvider>
-        <View style={{ flex: 1, backgroundColor: Platform.OS === 'web' ? th.frame : color.canvas, alignItems: 'center' }}>
-          <View key={key} style={{ flex: 1, width: '100%', maxWidth: th.max, backgroundColor: color.canvas }}>
-            {!account ? <SignIn onSignedIn={setAccount} />
-              : account.role === 'employee' ? <EmployeeShell account={account} onSignOut={out} />
-              : account.role === 'admin' ? <AdminShell account={account} onSignOut={out} />
-              : <KitchenShell account={account} onSignOut={out} />}
+        <MarketProvider>
+          <View style={{ flex: 1, backgroundColor: Platform.OS === 'web' ? th.frame : color.canvas, alignItems: 'center' }}>
+            <View key={key} style={{ flex: 1, width: '100%', maxWidth: th.max, backgroundColor: color.canvas }}>
+              {!account ? <SignIn onSignedIn={setAccount} />
+                : account.surface === 'market' ? <MarketShell account={account} onSignOut={out} />
+                : account.role === 'employee' ? <EmployeeShell account={account} onSignOut={out} />
+                : account.role === 'admin' ? <AdminShell account={account} onSignOut={out} />
+                : <KitchenShell account={account} onSignOut={out} />}
+            </View>
           </View>
-        </View>
+        </MarketProvider>
       </StoreProvider>
     </SafeAreaProvider>
   );
