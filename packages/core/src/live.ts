@@ -5,6 +5,7 @@ import 'react-native-url-polyfill/auto';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Drop, DropStage, Order } from './types';
 import { DEMO_START, seedDrops } from './seed';
+import { openDemoOn } from './open-demo';
 
 export const SESSION = 'demo';
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -28,6 +29,8 @@ export function defaultSession(): LiveSession {
 const need = () => { if (!supabase) throw new Error('Supabase env missing'); return supabase; };
 
 export async function fetchLive(): Promise<LiveState | null> {
+  // Open demo never reads the shared office session. Seed figures only, and no reset.
+  if (openDemoOn()) return { session: defaultSession(), orders: [], drops: seedDrops(), profiles: {} };
   const db = need();
   const [s, o, d, p] = await Promise.all([
     db.from('makan_session').select('*').eq('id', SESSION).maybeSingle(),
@@ -47,6 +50,7 @@ export async function fetchLive(): Promise<LiveState | null> {
 }
 
 export async function writeSession(patch: Partial<LiveSession>) {
+  if (openDemoOn()) return;
   const m: Record<string, unknown> = { id: SESSION, updated_at: new Date().toISOString() };
   if (patch.cutoffPassed !== undefined) m.cutoff_passed = patch.cutoffPassed;
   if (patch.batchConfirmed !== undefined) m.batch_confirmed = patch.batchConfirmed;
@@ -60,17 +64,24 @@ export async function writeSession(patch: Partial<LiveSession>) {
   const { error } = await need().from('makan_session').update(m).eq('id', SESSION); if (error) throw error;
 }
 export async function writeOrder(o: Order) {
+  if (openDemoOn()) return;
   const { error } = await need().from('makan_orders').upsert({ id: o.id, session_id: SESSION, employee_id: o.employeeId, office_id: o.officeId, dish_id: o.dishId, placed_at: o.placedAt }); if (error) throw error;
 }
-export async function removeOrder(id: string) { const { error } = await need().from('makan_orders').delete().eq('id', id); if (error) throw error; }
+export async function removeOrder(id: string) {
+  if (openDemoOn()) return;
+  const { error } = await need().from('makan_orders').delete().eq('id', id); if (error) throw error;
+}
 export async function writeDrop(d: Drop) {
+  if (openDemoOn()) return;
   // Rows are pre-seeded; anon may only update them (see supabase/makan_rls.sql).
   const { error } = await need().from('makan_drops').update({ caterer_id: d.catererId, stage: d.stage, due_at: d.dueAt, delay_min: d.delayMin, delay_notified_at: d.delayNotifiedAt, delivered_at: d.deliveredAt, rider: d.rider }).eq('session_id', SESSION).eq('office_id', d.officeId); if (error) throw error;
 }
 export async function writeProfile(employeeId: string, floor: string, desk: string) {
+  if (openDemoOn()) return;
   const { error } = await need().from('makan_profiles').upsert({ session_id: SESSION, employee_id: employeeId, floor, desk }); if (error) throw error;
 }
 export async function resetLive() {
+  if (openDemoOn()) return;
   const db = need();
   await db.from('makan_orders').delete().eq('session_id', SESSION);
   await db.from('makan_profiles').delete().eq('session_id', SESSION);
@@ -80,7 +91,7 @@ export async function resetLive() {
 }
 
 export function subscribe(onChange: () => void): () => void {
-  if (!supabase) return () => {};
+  if (openDemoOn() || !supabase) return () => {};
   const db = supabase;
   const ch = db.channel('makan-demo');
   for (const t of ['makan_session', 'makan_orders', 'makan_drops', 'makan_profiles']) ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, onChange);

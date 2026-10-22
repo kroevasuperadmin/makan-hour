@@ -3,6 +3,7 @@
 // admin. Tables and functions come from supabase/makan_migration_2.sql and _3.sql. Until it has run, calls throw NotSetUp and the app says so.
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { SB_KEY, SB_URL } from './live';
+import { openDemoOn } from './open-demo';
 import { Role } from './types';
 
 export class NotSetUp extends Error {}
@@ -55,29 +56,41 @@ export async function signedInEmail(): Promise<string | null> {
   return data.session?.user.email?.toLowerCase() ?? null;
 }
 export async function getAdminDomain(officeId: string): Promise<string | null> {
+  if (openDemoOn()) return null;
   const r = check(await db().from('makan_offices').select('admin_domain').eq('id', officeId).maybeSingle()) as { admin_domain: string | null } | null;
   return r?.admin_domain ?? null;
 }
 export async function setAdminDomain(officeId: string, domain: string) {
+  if (openDemoOn()) throw new Error('Open demo cannot change office members');
   check(await db().rpc('makan_set_admin_domain', { p_office: officeId, p_domain: domain }));
 }
 export async function myMemberships(): Promise<Membership[]> {
+  if (openDemoOn()) return [];
   const rows = check(await db().rpc('makan_claim_invites')) as { member_id: string; office_id: string; company: string; building: string | null; role: Role; name: string | null }[];
   return (rows ?? []).map(r => ({ memberId: r.member_id, officeId: r.office_id, company: r.company, building: r.building, role: r.role, name: r.name }));
 }
 export async function createOffice(p: { company: string; building: string; district: string; name: string }): Promise<string> {
+  if (openDemoOn()) throw new Error('Open demo cannot create an office');
   return check(await db().rpc('makan_create_office', { p_company: p.company, p_building: p.building, p_district: p.district, p_name: p.name })) as string;
 }
 export async function listMembers(officeId: string): Promise<Member[]> {
+  if (openDemoOn()) return [];
   const rows = check(await db().from('makan_members').select('id,email,name,role,user_id').eq('office_id', officeId).order('created_at')) as { id: string; email: string; name: string | null; role: Role; user_id: string | null }[];
   return rows.map(r => ({ id: r.id, email: r.email, name: r.name, role: r.role, userId: r.user_id }));
 }
 export async function inviteMember(officeId: string, email: string, role: Role, name: string) {
+  if (openDemoOn()) throw new Error('Open demo cannot change office members');
   const { data } = await db().auth.getUser();
   check(await db().from('makan_members').insert({ office_id: officeId, email: normEmail(email), role, name: name.trim() || null, invited_by: data.user?.id }));
 }
-export async function setMemberRole(id: string, role: Role) { check(await db().from('makan_members').update({ role }).eq('id', id)); }
-export async function removeMember(id: string) { check(await db().from('makan_members').delete().eq('id', id)); }
+export async function setMemberRole(id: string, role: Role) {
+  if (openDemoOn()) throw new Error('Open demo cannot change office members');
+  check(await db().from('makan_members').update({ role }).eq('id', id));
+}
+export async function removeMember(id: string) {
+  if (openDemoOn()) throw new Error('Open demo cannot change office members');
+  check(await db().from('makan_members').delete().eq('id', id));
+}
 export async function signOutReal() { try { await auth?.auth.signOut(); } catch { /* already out */ } }
 // True once makan_migration_2.sql has run. Before sign-in the RPC answers "permission denied"
 // if it exists, or "not found" if it doesn't.

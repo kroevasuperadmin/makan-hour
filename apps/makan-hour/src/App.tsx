@@ -1,13 +1,14 @@
+import './openDemoFlag';
 import React, { useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import { adminFonts, adminPalette, applyTheme, color, employeeFonts, employeePalette, kitchenFonts, kitchenPalette, riderPalette } from '@makan/ui';
-import { MarketProvider, setRealPayments, signOutReal, StoreProvider } from '@makan/core';
+import { MarketProvider, openDemoOn, setRealPayments, signOutReal, StoreProvider } from '@makan/core';
 import SignIn from './SignIn';
 import { AdminShell, EmployeeShell, KitchenShell } from './Shells';
 import { MarketShell } from './market/Shell';
-import { Account } from './accounts';
+import { Account, accountAsSide, MarketSide, openDemoAccount } from './accounts';
 
 // Office lunch keeps its three shells. The marketplace preview (customer, vendor, rider, admin)
 // is a separate surface with its own in-memory store.
@@ -47,23 +48,28 @@ export default function App() {
     BarlowCondensed_600SemiBold: require('../assets/fonts/BarlowCondensed_600SemiBold.ttf'),
   });
   const [account, setAccount] = useState<Account | null>(null);
-  const key = themeKey(account);
+  const demo = openDemoOn();
+  // Office shells read the shared lunch session. Open demo never mounts them.
+  const shown = account && demo && account.surface !== 'market' ? openDemoAccount(account.email, account.name) : account;
+  const key = themeKey(shown);
   const th = THEMES[key];
   applyTheme(th.p, th.f, th.hero); // synchronous, before this render's children read the tokens
   if (!loaded) return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: color.canvas }}><ActivityIndicator color={color.ink} /></View>;
-  setRealPayments(!!account?.real);
-  const out = () => { if (account?.real) signOutReal(); setAccount(null); };
+  setRealPayments(!!shown?.real && !demo);
+  const enter = (a: Account) => setAccount(demo && a.surface === 'office' ? openDemoAccount(a.email, a.name) : a);
+  const switchRole = (role: MarketSide) => setAccount(prev => (prev ? accountAsSide(prev, role) : prev));
+  const out = () => { if (shown?.real || demo) signOutReal(); setAccount(null); };
   return (
     <SafeAreaProvider>
       <StoreProvider>
         <MarketProvider>
           <View style={{ flex: 1, backgroundColor: Platform.OS === 'web' ? th.frame : color.canvas, alignItems: 'center' }}>
             <View key={key} style={{ flex: 1, width: '100%', maxWidth: th.max, backgroundColor: color.canvas }}>
-              {!account ? <SignIn onSignedIn={setAccount} />
-                : account.surface === 'market' ? <MarketShell account={account} onSignOut={out} />
-                : account.role === 'employee' ? <EmployeeShell account={account} onSignOut={out} />
-                : account.role === 'admin' ? <AdminShell account={account} onSignOut={out} />
-                : <KitchenShell account={account} onSignOut={out} />}
+              {!shown ? <SignIn onSignedIn={enter} />
+                : shown.surface === 'market' ? <MarketShell account={shown} onSignOut={out} onSwitchRole={demo ? switchRole : undefined} />
+                : shown.role === 'employee' ? <EmployeeShell account={shown} onSignOut={out} />
+                : shown.role === 'admin' ? <AdminShell account={shown} onSignOut={out} />
+                : <KitchenShell account={shown} onSignOut={out} />}
             </View>
           </View>
         </MarketProvider>

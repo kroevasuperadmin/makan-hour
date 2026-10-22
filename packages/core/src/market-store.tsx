@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { MarketAction, MarketState, reduceMarket, seedMarket } from './market';
 import { loadMarket, riderDeliver, riderPickup, vendorAdvance, vendorToggle } from './market-db';
+import { openDemoOn } from './open-demo';
 
 type Api = {
   s: MarketState;
@@ -19,6 +20,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const stopPoll = useRef<(() => void) | null>(null);
 
   const pull = useCallback(async () => {
+    if (openDemoOn()) return;
     const next = await loadMarket();
     setS(prev => ({ ...prev, restaurants: next.restaurants, items: next.items, orders: next.orders }));
   }, []);
@@ -26,6 +28,7 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => { if (mode.current === 'live') await pull(); }, [pull]);
 
   const goLive = useCallback(() => {
+    if (openDemoOn()) return () => {};
     mode.current = 'live';
     setLive(true);
     let stop = false;

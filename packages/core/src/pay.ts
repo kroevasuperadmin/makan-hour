@@ -1,5 +1,6 @@
 // Payments through Stripe Checkout (FPX and card, MYR). The secret key never ships in the app:
 // the app calls our server routes (apps/makan-hour/api/pay/*), which hold the key.
+import { openDemoOn } from './open-demo';
 const API = (process.env.EXPO_PUBLIC_API_URL || 'https://makanhour.rizqey.com/app').replace(/\/$/, '');
 
 export type Checkout = { id: string; url: string; test: boolean };
@@ -10,6 +11,7 @@ let realPayments = false;
 export const setRealPayments = (on: boolean) => { realPayments = on; };
 
 export async function createCheckout(p: { kind: 'invoice' | 'topup' | 'order'; ref: string; amountSen: number; email: string; description: string; token?: string }): Promise<Checkout> {
+  if (openDemoOn()) throw new PayNotConfigured('Open demo does not take payment');
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (p.token) headers.authorization = `Bearer ${p.token}`;
   const { token: _token, ...body } = p;
